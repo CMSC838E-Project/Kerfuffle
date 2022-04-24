@@ -1,6 +1,8 @@
 #lang racket
 (provide (all-defined-out))
 
+;; -------------- Changes Start --------------
+
 ;; type Prog = (Prog (Listof Type) (Listof Defn) Expr)
 (struct Prog (ts ds e) #:prefab)
 
@@ -17,6 +19,8 @@
 (struct TList  (t)            #:prefab)
 (struct TVec   (t)            #:prefab)
 (struct TUnion (t1 t2)        #:prefab)
+
+;; -------------- Changes End --------------
 
 ;; type Expr = (Eof)
 ;;           | (Empty)

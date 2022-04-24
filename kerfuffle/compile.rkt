@@ -13,14 +13,14 @@
 ;; Prog -> Asm
 (define (compile p)
   (match p
-    [(Prog ds e)  
+    [(Prog ts ds e)  
      (prog (externs)
            (Global 'entry)
            (Label 'entry)
            (Mov rbx rdi) ; recv heap pointer
            (compile-e e '() #t)
            (Ret)
-           (compile-defines ds)
+           (compile-defines ts ds)
            (Label 'raise_error_align)
            pad-stack
            (Call 'raise_error))]))
@@ -30,23 +30,66 @@
        (Extern 'read_byte)
        (Extern 'write_byte)
        (Extern 'raise_error)))
-           
+
+
+
 ;; [Listof Defn] -> Asm
-(define (compile-defines ds)
+(define (compile-defines ts ds)
   (match ds
     ['() (seq)]
     [(cons d ds)
-     (seq (compile-define d)
-          (compile-defines ds))]))
+     (seq (compile-define ts d)
+          (compile-defines ts ds))]))
+
+;; -------------- Changes Start --------------
 
 ;; Defn -> Asm
-(define (compile-define d)
+(define (compile-define ts d)
   (match d
     [(Defn f xs e)
-     (seq (Label (symbol->label f))
-          (compile-e e (reverse xs) #t)
-          (Add rsp (* 8 (length xs))) ; pop args
-          (Ret))]))
+     (let ([ts (lookup-type f ts)])
+      (seq  (Label (symbol->label f))
+            
+            (if ts (type-check-param (first ts) xs)
+                   (seq))
+
+            (compile-e e (reverse xs) #t)
+            (Add rsp (* 8 (length xs))) ; pop args
+
+            (if ts (type-check (last ts) rax)
+                   (seq))
+
+            (Ret))
+            
+        )]))
+
+(define (lookup-type f ts)
+  (match ts
+    ['()                                  #f]
+    [(cons (Type f-curr ins out) _)
+      #:when (eq? f f-curr)               (list ins out)]
+    [(cons _ ts)                          (lookup-type f ts)]))
+
+(define (type-check-param ts xs)
+  (match (list ts xs)
+    [(list '() '())                          (seq)]
+    [(list (cons t ts) (cons _ xs))          (seq (type-check t (Offset rsp (* 8 (length xs))))
+                                                  (type-check-param ts xs))]))
+
+(define (type-check t mem)
+  (match t 
+    [(TInt)       (assert-integer mem)]
+    [(TChar)      (assert-char mem)]
+    [(TStr)       (assert-string mem)]
+    ;[(TBool)                         ] Let's ignore bools for now because no asset exists for it?
+    ;[(TList t)      (assert-cons mem)] Let's ignore lists for now because we need to check each element in list
+    ;[(TVec t)                        ] Let's ignore vectors for now because we need to check each element in vec
+    ; [(TUnion t1 t2)       (begin (type-check t1 mem))] Let's ignore because only one assert needs to work
+    [(TAny)        (seq)]
+  )
+)
+
+;; -------------- Changes End --------------
 
 ;; Expr CEnv Bool -> Asm
 (define (compile-e e c t?)

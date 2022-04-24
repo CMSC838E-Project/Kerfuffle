@@ -2,6 +2,8 @@
 (provide parse parse-define parse-e)
 (require "ast.rkt")
 
+;; -------------- Changes Start --------------
+
 ;; [Listof S-Expr] -> Prog
 (define (parse s)
   (match s
@@ -35,6 +37,8 @@
     [_                        (error "Parse Error: invalid type")]
   )
 )
+
+;; -------------- Changes End --------------
 
 ;; S-Expr -> Defn
 (define (parse-define s)
