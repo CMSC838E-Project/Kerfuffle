@@ -1,11 +1,22 @@
 #lang racket
 (provide (all-defined-out))
 
-;; type Prog = (Prog (Listof Defn) Expr)
-(struct Prog (ds e) #:prefab)
+;; type Prog = (Prog (Listof Type) (Listof Defn) Expr)
+(struct Prog (ts ds e) #:prefab)
 
 ;; type Defn = (Defn Id (Listof Id) Expr)
 (struct Defn (f xs e) #:prefab)
+
+(struct Type   (f ins out)    #:prefab)
+
+(struct TInt   ()             #:prefab)
+(struct TChar  ()             #:prefab)
+(struct TStr   ()             #:prefab)
+(struct TBool  ()             #:prefab)
+(struct TAny   ()             #:prefab)
+(struct TList  (t)            #:prefab)
+(struct TVec   (t)            #:prefab)
+(struct TUnion (t1 t2)        #:prefab)
 
 ;; type Expr = (Eof)
 ;;           | (Empty)

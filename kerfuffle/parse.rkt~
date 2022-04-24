@@ -8,18 +8,17 @@
     [(cons (and (cons 'define _) d) s)
      (match (parse s)
        [(Prog ts ds e)
-        (Prog ts (cons (parse-define d) ds) e)])]
+        (Prog (cons (parse-define d) ds) e)])]
     [(cons (and (cons ': _) t) s)
      (match (parse s)
       [(Prog ts ds e)
-       (Prog (cons (parse-type-def t) ts) ds e)])]
-    [(cons e '()) (Prog '() '() (parse-e e))]
+       (Prog (cons (parse-type t) ts) e)])]
+    [(cons e '()) (Prog '() (parse-e e))]
     [_ (error "program parse error")]))
 
-;; [Listof S-Expr -> Type]
-(define (parse-type-def s)
+(define (parse-Type s)
   (match s
-    [(list ': (? symbol? f) (list '-> ins ... out))
+    [(list ': (? symbol? f) ('-> ins ... out))
       (Type f (map parse-type ins) (parse-type out))]))
 
 (define (parse-type t)
