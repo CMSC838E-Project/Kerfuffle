@@ -81,7 +81,7 @@
     [(TInt)       (assert-integer mem)]
     [(TChar)      (assert-char mem)]
     [(TStr)       (assert-string mem)]
-    ;[(TBool)                         ] Let's ignore bools for now because no asset exists for it?
+    [(TBool)      (assert-bool mem)]
     ;[(TList t)      (assert-cons mem)] Let's ignore lists for now because we need to check each element in list
     ;[(TVec t)                        ] Let's ignore vectors for now because we need to check each element in vec
     ; [(TUnion t1 t2)       (begin (type-check t1 mem))] Let's ignore because only one assert needs to work

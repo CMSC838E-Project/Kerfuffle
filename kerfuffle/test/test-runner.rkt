@@ -5,13 +5,31 @@
 (define (test-runner run)
   ;; Kerfuffle examples
 
-  ;; NOTE: This one fails because of tail calls, I am not sure how to handle yikes 
-  ;; bad, partial type return
+  ;; NOTE: This only works because we disabled tail recursion for typed funcs
   (check-equal? (run
                  '(: func (-> Integer String String))
                  '(define (func2 a b) 1)
                  '(define (func a b) (func2 2 b))
                  '(func 5 "bac"))
+                'err)
+  ;; valid bool
+  (check-equal? (run
+                 '(: func (-> Integer String Boolean String))
+                 '(define (func int str bool) (if bool int str))
+                 '(func 5 "abc" #f))
+                "abc")
+  ;; valid any
+  (check-equal? (run
+                 '(: func (-> Integer String Any Any))
+                 '(define (func int str bool) (if bool int str))
+                 '(func 5 "abc" 1))
+                5)
+
+  ;; bad bool
+  (check-equal? (run
+                 '(: func (-> Integer String Boolean String))
+                 '(define (func int str bool) (if bool int str))
+                 '(func 5 "abc" 1))
                 'err)
 
   ;; valid
@@ -330,7 +348,7 @@
 
 (define (test-runner-io run)
 
-  
+  #t
   ; ;; Evildoer examples
   ; (check-equal? (run "" 7) (cons 7 ""))
   ; (check-equal? (run "" '(write-byte 97)) (cons (void) "a"))

@@ -304,6 +304,16 @@
   (assert-type ptr-mask type-vect))
 (define assert-string
   (assert-type ptr-mask type-str))
+(define (assert-bool r)
+  (let ([ok (gensym)])
+    (seq  (Mov r8 r) 
+          (Cmp r8 val-true)
+          (Je ok)
+          (Mov r8 r) 
+          (Cmp r8 val-false)
+          (Je ok)
+          (Jmp 'raise_error_align)
+          (Label ok))))
 
 (define (assert-codepoint r)
   (let ((ok (gensym)))
