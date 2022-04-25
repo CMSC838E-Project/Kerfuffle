@@ -53,7 +53,7 @@
             (if ts (type-check-param (first ts) xs)
                    (seq))
 
-            (compile-e e (reverse xs) #t)
+            (compile-e e (reverse xs) (not ts))
             (Add rsp (* 8 (length xs))) ; pop args
 
             (if ts (type-check (last ts) rax)

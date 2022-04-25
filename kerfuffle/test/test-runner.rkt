@@ -330,7 +330,7 @@
 
 (define (test-runner-io run)
 
-  #t
+  
   ; ;; Evildoer examples
   ; (check-equal? (run "" 7) (cons 7 ""))
   ; (check-equal? (run "" '(write-byte 97)) (cons (void) "a"))
