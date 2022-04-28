@@ -110,6 +110,93 @@
                  '(func (func2 2 "abc") #\a 6 "bac"))
                 'err)
 
+  (check-equal? (run
+                 '(: func (-> (Listof Integer) Integer))
+                 '(define (func lst) (if (empty? lst) 0 (car lst)))
+                 '(func (cons 5 (cons 2 '()))))
+                 5)
+
+  (check-equal? (run
+                 '(: func (-> (Listof Integer) Integer))
+                 '(define (func lst) (if (empty? lst) 0 (car lst)))
+                 '(func (cons 5 (cons "string" '()))))
+                 'err)
+
+  (check-equal? (run
+                 '(: func (-> (Listof (Union Integer (Union String (Listof Integer)))) Integer))
+                 '(define (func lst) (if (empty? lst) 0 (car lst)))
+                 '(func (cons 5 (cons "string" '()))))
+                 5)
+  (check-equal? (run
+                 '(: func (-> (Listof (Union Integer (Union String (Listof Integer)))) Integer))
+                 '(define (func lst) (if (empty? lst) 0 (car lst)))
+                 '(func (cons 5 (cons "string" (cons (cons "str" '()) '())))))
+                 'err)
+
+  (check-equal? (run
+                 '(: func (-> Integer (Listof Integer)))
+                 '(define (func x) (cons x (cons x '())))
+                 '(func 5))
+                 '(5 5))
+
+  (check-equal? (run
+                 '(: func (-> Integer (Listof (Union Integer (Union String (Listof Integer))))))
+                 '(define (func x) (cons x (cons "string" (cons (cons "str" '()) '()))))
+                 '(func 5))
+                 'err)
+
+  (check-equal? (run
+                 '(: func (-> Integer (Listof (Union Integer (Union String (Listof Integer))))))
+                 '(define (func x) (cons x (cons "string" (cons (cons x '()) '()))))
+                 '(func 5))
+                 (list 5 "string" (list 5)))
+
+  (check-equal? (run
+                 '(: func (-> (Vectorof (Union Integer (Union String (Listof Integer)))) String))
+                 '(define (func x) "abc")
+                 '(let ([v (make-vector 3 1)])
+                    (begin
+                      (begin
+                        (vector-set! v 1 "a")
+                        (vector-set! v 2 (cons 1 (cons 1 '()))))
+                      (func v))))
+                 "abc")
+
+  (check-equal? (run
+                 '(: func (-> (Vectorof (Union Integer (Union String (Listof Integer)))) String))
+                 '(define (func x) "abc")
+                 '(let ([v (make-vector 3 1)])
+                    (begin
+                      (begin
+                        (vector-set! v 1 "a")
+                        (vector-set! v 2 (cons "1" (cons 1 '()))))
+                      (func v))))
+                 'err)
+
+  (check-equal? (run
+                 '(: func (-> Integer (Vectorof (Union Integer (Union String (Listof Integer))))))
+                 '(define (func x)
+                    (let ([v (make-vector 3 x)])
+                      (begin
+                        (begin
+                          (vector-set! v 1 "a")
+                          (vector-set! v 2 (cons "1" (cons x '()))))
+                        v)))
+                 '(func 5))
+                 'err)
+
+  (check-equal? (run
+                 '(: func (-> Integer (Vectorof (Union Integer (Union String (Listof Integer))))))
+                 '(define (func x)
+                    (let ([v (make-vector 3 x)])
+                      (begin
+                        (begin
+                          (vector-set! v 1 "a")
+                          (vector-set! v 2 (cons x (cons x '()))))
+                        v)))
+                 '(func 5))
+                 #(5 "a" (5 5)))
+
 
 
   ; ;; Abscond examples
