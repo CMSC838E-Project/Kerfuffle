@@ -1,7 +1,7 @@
-#lang racket
+#lang typed/racket
 
-(: f (-> (Union Integer (Union String Char)) String))
+(: f (-> (Listof (Union Integer String)) String))
 
 (define (f x) "abc")
 
-(f #f)
+(f (cons 1 (cons #f '())))

@@ -17,6 +17,10 @@
   (assert-type-ok ptr-mask type-box))
 (define assert-cons-ok
   (assert-type-ok ptr-mask type-cons))
+(define (assert-empty-ok r ok)
+  (seq  (Mov r8 r)
+        (Cmp r8 val-empty)
+        (Je ok)))
 (define assert-vector-ok
   (assert-type-ok ptr-mask type-vect))
 (define assert-string-ok

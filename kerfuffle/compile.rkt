@@ -104,7 +104,7 @@
 
 (define (type-check t mem ok)
   
-  (seq  (match t 
+  (seq  (match t
           [(TInt)               (seq  (assert-integer-ok mem ok)
                                       (Mov rdi (imm->bits 1)))]
           [(TChar)              (seq  (assert-char-ok mem ok)
@@ -116,8 +116,28 @@
           [(TUnion t1 t2)       (seq  (type-check t1 mem ok)
                                       (type-check t2 mem ok)
                                       (Mov rdi (imm->bits 7)))]
-          [(TAny)               (seq)])
-          ;[(TList t)      (assert-cons mem)] Let's ignore lists for now because we need to check each element in list
+          [(TAny)               (seq)]
+          [(TList t)      (let ([loop (gensym 'lst_loop)]
+                                 [next-element (gensym 'lst_next)]
+                                 [cont (gensym 'lst_cont)]
+                                 [end (gensym 'lst_end)])
+                             (seq (Mov rax mem)
+                                  (Jmp loop)
+                                  (Label next-element)
+                                  (Pop rax)
+                                  (Mov rax (Offset rax 0))
+                                  (Label loop)
+                                  (assert-empty-ok rax ok)
+                                  (assert-cons-ok rax cont)
+                                  (Jmp end)
+                                  (Label cont)
+                                  (Xor rax type-cons)
+                                  (Push rax)
+                                  (Mov rax (Offset rax 8))
+                                  (type-check t rax next-element)
+                                  (Pop rax)
+                                  (Label end)
+                                  (Mov rdi (imm->bits 5))))])
           ;[(TVec t)                        ] Let's ignore vectors for now because we need to check each element in vec
           ))
 
