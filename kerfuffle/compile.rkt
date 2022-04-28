@@ -114,7 +114,7 @@
           [(TBool)              (seq  (assert-bool-ok mem ok))]
           [(TUnion t1 t2)       (seq  (type-check t1 mem ok)
                                       (type-check t2 mem ok))]
-          [(TAny)               (seq)]
+          [(TAny)               (seq  (Jmp ok))]
           [(TList t)      (let ([loop (gensym 'lst_loop)]
                                 [next-element (gensym 'lst_next)]
                                 [cont (gensym 'lst_cont)]
