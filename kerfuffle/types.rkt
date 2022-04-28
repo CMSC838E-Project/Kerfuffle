@@ -1,5 +1,6 @@
 #lang racket
 (provide (all-defined-out))
+(require "ast.rkt")
 
 (define imm-shift          3)
 (define imm-mask       #b111)
@@ -64,3 +65,14 @@
 
 (define (str-bits? v)
   (zero? (bitwise-xor (bitwise-and v imm-mask) type-str)))
+
+(define (type->string t)
+  (match t
+    [(TInt)   "Integer"]
+    [(TChar)  "Char"]
+    [(TStr)   "String"]
+    [(TBool)  "Boolean"]
+    [(TUnion t1 t2) (string-append 
+                     "(Union " (type->string t1) " " (type->string t2) ")")]
+    [(TList t)      (string-append "(Listof " (type->string t) ")")]
+    [(TVec t)       (string-append "(Vectorof " (type->string t) ")")]))

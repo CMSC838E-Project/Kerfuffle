@@ -98,24 +98,20 @@
     [(list (cons t ts) (cons _ xs))         (let ([ok (gensym)]
                                                   [mem (Offset rsp (* 8 (length xs)))]) 
                                               (seq  (type-check t mem ok)
-                                                    (raise-error-type rdi mem)
+                                                    (compile-string (type->string t))
+                                                    (raise-error-type rax mem)
                                                     (Label ok)
                                                     (type-check-param ts xs)))]))
 
 (define (type-check t mem ok)
   
   (seq  (match t
-          [(TInt)               (seq  (assert-integer-ok mem ok)
-                                      (Mov rdi (imm->bits 1)))]
-          [(TChar)              (seq  (assert-char-ok mem ok)
-                                      (Mov rdi (imm->bits 2)))]
-          [(TStr)               (seq  (assert-string-ok mem ok)
-                                      (Mov rdi (imm->bits 3)))]
-          [(TBool)              (seq  (assert-bool-ok mem ok)
-                                      (Mov rdi (imm->bits 4)))]
+          [(TInt)               (seq  (assert-integer-ok mem ok))]
+          [(TChar)              (seq  (assert-char-ok mem ok))]
+          [(TStr)               (seq  (assert-string-ok mem ok))]
+          [(TBool)              (seq  (assert-bool-ok mem ok))]
           [(TUnion t1 t2)       (seq  (type-check t1 mem ok)
-                                      (type-check t2 mem ok)
-                                      (Mov rdi (imm->bits 7)))]
+                                      (type-check t2 mem ok))]
           [(TAny)               (seq)]
           [(TList t)      (let ([loop (gensym 'lst_loop)]
                                 [next-element (gensym 'lst_next)]
@@ -136,8 +132,7 @@
                                  (Mov rax (Offset rax 8))
                                  (type-check t rax next-element)
                                  (Pop rax)
-                                 (Label end)
-                                 (Mov rdi (imm->bits 5))))]
+                                 (Label end)))]
           [(TVec t)        (let ([end (gensym 'vec_end)]
                                  [cont (gensym 'vec_cont)]
                                  [loop (gensym 'vec_loop)]
@@ -165,8 +160,7 @@
                                   (type-check t rax next-element)
                                   (Pop rax)
                                   (Pop r8)
-                                  (Label end)
-                                  (Mov rdi (imm->bits 6))))])
+                                  (Label end)))])
           ))
 
 ;; -------------- Changes End --------------
