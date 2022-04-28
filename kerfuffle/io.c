@@ -4,6 +4,8 @@
 #include "values.h"
 #include "runtime.h"
 
+#include "print.h"
+
 val_t read_byte(void)
 {
   char c = getc(in);
@@ -21,5 +23,12 @@ val_t peek_byte(void)
 val_t write_byte(val_t c)
 {
   putc((char) val_unwrap_int(c), out);
+  return val_wrap_void();
+}
+
+val_t writeln(val_t x)
+{
+  print_result(x);
+  printf("\n");
   return val_wrap_void();
 }

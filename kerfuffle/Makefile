@@ -11,7 +11,8 @@ objs = \
 	main.o \
 	values.o \
 	print.o \
-	io.o
+	io.o \
+	errors.o
 
 default: runtime.o
 
