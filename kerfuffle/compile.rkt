@@ -77,7 +77,9 @@
 
             (if ts  (let  ([ok (gensym)])
                       (seq  (type-check (last ts) rax ok)
-                            (raise-error-type rdi rax)
+                            (Mov r8 rax)
+                            (compile-string (type->string (last ts)))
+                            (raise-error-type rax r8)
                             (Label ok)))
                     (seq))
 

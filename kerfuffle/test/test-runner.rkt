@@ -9,106 +9,106 @@
                  '1)
                 1)
 
-  ; ; NOTE: This only works because we disabled tail recursion for typed funcs
-  ; (check-equal? (run
-  ;                '(: func (-> Integer String))
-  ;                '(define (func2) 1)
-  ;                '(define (func a) (func2))
-  ;                '(func 5))
-  ;               'err)
-  ; ;; valid bool
-  ; (check-equal? (run
-  ;                '(: func (-> Integer String Boolean String))
-  ;                '(define (func int str bool) (if bool int str))
-  ;                '(func 5 "abc" #f))
-  ;               "abc")
-  ; ;; valid any
-  ; (check-equal? (run
-  ;                '(: func (-> Integer String Any Any))
-  ;                '(define (func int str bool) (if bool int str))
-  ;                '(func 5 "abc" 1))
-  ;               5)
+  ; NOTE: This only works because we disabled tail recursion for typed funcs
+  (check-equal? (run
+                 '(: func (-> Integer String))
+                 '(define (func2) 1)
+                 '(define (func a) (func2))
+                 '(func 5))
+                'err)
+  ;; valid bool
+  (check-equal? (run
+                 '(: func (-> Integer String Boolean String))
+                 '(define (func int str bool) (if bool int str))
+                 '(func 5 "abc" #f))
+                "abc")
+  ;; valid any
+  (check-equal? (run
+                 '(: func (-> Integer String Any Any))
+                 '(define (func int str bool) (if bool int str))
+                 '(func 5 "abc" 1))
+                5)
 
-  ; ;; bad bool
-  ; (check-equal? (run
-  ;                '(: func (-> Integer String Boolean String))
-  ;                '(define (func int str bool) (if bool int str))
-  ;                '(func 5 "abc" 1))
-  ;               'err)
+  ;; bad bool
+  (check-equal? (run
+                 '(: func (-> Integer String Boolean String))
+                 '(define (func int str bool) (if bool int str))
+                 '(func 5 "abc" 1))
+                'err)
 
-  ; ;; valid
-  ; (check-equal? (run
-  ;                '(: func (-> Integer Char Integer String Integer))
-  ;                '(define (func a b c d) (+ a c))
-  ;                '(func 5 #\a 6 "bac"))
-  ;               11)
+  ;; valid
+  (check-equal? (run
+                 '(: func (-> Integer Char Integer String Integer))
+                 '(define (func a b c d) (+ a c))
+                 '(func 5 #\a 6 "bac"))
+                11)
 
-  ; ;; valid 2
-  ; (check-equal? (run
-  ;                '(: func2 (-> Integer String Integer))
-  ;                '(: func (-> Integer Char Integer String Integer))
-  ;                '(define (func a b c d) (+ a c))
-  ;                '(define (func2 a b) (+ (string-length b) a))
-  ;                '(func2 5 "bac"))
-  ;               8)
+  ;; valid 2
+  (check-equal? (run
+                 '(: func2 (-> Integer String Integer))
+                 '(: func (-> Integer Char Integer String Integer))
+                 '(define (func a b c d) (+ a c))
+                 '(define (func2 a b) (+ (string-length b) a))
+                 '(func2 5 "bac"))
+                8)
 
-  ; ;; valid, partial type
-  ; (check-equal? (run
-  ;                '(: func (-> Integer Char Integer String Integer))
-  ;                '(define (func a b c d) (+ a c))
-  ;                '(define (func2 b) (+ (string-length b) (func 3 #\a 2 "hi")))
-  ;                '(func2 "bac"))
-  ;               8)
+  ;; valid, partial type
+  (check-equal? (run
+                 '(: func (-> Integer Char Integer String Integer))
+                 '(define (func a b c d) (+ a c))
+                 '(define (func2 b) (+ (string-length b) (func 3 #\a 2 "hi")))
+                 '(func2 "bac"))
+                8)
 
-  ; ;; valid, partial type 2
-  ; (check-equal? (run
-  ;                '(: func (-> Integer Char Integer String Integer))
-  ;                '(define (func a b c d) (+ (func2 2 d) c))
-  ;                '(define (func2 a b) (+ (string-length b) a))
-  ;                '(func 5 #\a 6 "bac"))
-  ;               11)
+  ;; valid, partial type 2
+  (check-equal? (run
+                 '(: func (-> Integer Char Integer String Integer))
+                 '(define (func a b c d) (+ (func2 2 d) c))
+                 '(define (func2 a b) (+ (string-length b) a))
+                 '(func 5 #\a 6 "bac"))
+                11)
 
-  ; ;; bad return
-  ; (check-equal? (run
-  ;                '(: func (-> Integer Char Integer String String))
-  ;                '(define (func a b c d) (+ a c))
-  ;                '(func 5 #\a 6 "bac"))
-  ;               'err)
+  ;; bad return
+  (check-equal? (run
+                 '(: func (-> Integer Char Integer String String))
+                 '(define (func a b c d) (+ a c))
+                 '(func 5 #\a 6 "bac"))
+                'err)
 
-  ; ;; bad return 2
-  ; (check-equal? (run
-  ;                '(: func2 (-> Integer String Char))
-  ;                '(: func (-> Integer Char Integer String Integer))
-  ;                '(define (func a b c d) (+ a c))
-  ;                '(define (func2 a b) (+ (string-length b) a))
-  ;                '(func2 5 "bac"))
-  ;               'err)
+  ;; bad return 2
+  (check-equal? (run
+                 '(: func2 (-> Integer String Char))
+                 '(: func (-> Integer Char Integer String Integer))
+                 '(define (func a b c d) (+ a c))
+                 '(define (func2 a b) (+ (string-length b) a))
+                 '(func2 5 "bac"))
+                'err)
 
 
 
-  ; ;; bad param
-  ; (check-equal? (run
-  ;                '(: func (-> Integer String Integer String Integer))
-  ;                '(define (func a b c d) (+ a c))
-  ;                '(func 5 #\a 6 "bac"))
-  ;               'err)
+  ;; bad param
+  (check-equal? (run
+                 '(: func (-> Integer String Integer String Integer))
+                 '(define (func a b c d) (+ a c))
+                 '(func 5 #\a 6 "bac"))
+                'err)
 
-  ; ;; bad param 2
-  ; (check-equal? (run
-  ;                '(: func2 (-> Integer Integer Integer))
-  ;                '(: func (-> Integer Char Integer String Integer))
-  ;                '(define (func a b c d) (+ a c))
-  ;                '(define (func2 a b) (+ (string-length b) a))
-  ;                '(func2 5 "bac"))
-  ;               'err)
+  ;; bad param 2
+  (check-equal? (run
+                 '(: func2 (-> Integer Integer Integer))
+                 '(: func (-> Integer Char Integer String Integer))
+                 '(define (func a b c d) (+ a c))
+                 '(define (func2 a b) (+ (string-length b) a))
+                 '(func2 5 "bac"))
+                'err)
 
-  ; ;; bad, partial type param
-  ; (check-equal? (run
-  ;                '(: func (-> Integer Char Integer String Integer))
-  ;                '(define (func a b c d) (+ a c))
-  ;                '(define (func2 a b) b)
-  ;                '(func (func2 2 "abc") #\a 6 "bac"))
-  ;               'err)
+  ;; bad, partial type param
+  (check-equal? (run
+                 '(: func (-> Integer Char Integer String Integer))
+                 '(define (func a b c d) (+ a c))
+                 '(define (func2 a b) b)
+                 '(func (func2 2 "abc") #\a 6 "bac"))
+                'err)
 
 
 
