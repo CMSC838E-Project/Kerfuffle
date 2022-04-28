@@ -76,11 +76,13 @@
             (Add rsp (* 8 (length xs))) ; pop args
 
             (if ts  (let  ([ok (gensym)])
-                      (seq  (type-check (last ts) rax ok)
-                            (Mov r8 rax)
+                      (seq  (Push rax)
+                            (type-check (last ts) rax ok)
+                            (Pop r8)
                             (compile-string (type->string (last ts)))
                             (raise-error-type rax r8)
-                            (Label ok)))
+                            (Label ok)
+                            (Pop rax)))
                     (seq))
 
             (Ret))
