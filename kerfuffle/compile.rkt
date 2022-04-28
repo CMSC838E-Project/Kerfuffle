@@ -118,27 +118,55 @@
                                       (Mov rdi (imm->bits 7)))]
           [(TAny)               (seq)]
           [(TList t)      (let ([loop (gensym 'lst_loop)]
-                                 [next-element (gensym 'lst_next)]
-                                 [cont (gensym 'lst_cont)]
-                                 [end (gensym 'lst_end)])
-                             (seq (Mov rax mem)
+                                [next-element (gensym 'lst_next)]
+                                [cont (gensym 'lst_cont)]
+                                [end (gensym 'lst_end)])
+                            (seq (Mov rax mem)
+                                 (Jmp loop)
+                                 (Label next-element)
+                                 (Pop rax)
+                                 (Mov rax (Offset rax 0))
+                                 (Label loop)
+                                 (assert-empty-ok rax ok)
+                                 (assert-cons-ok rax cont)
+                                 (Jmp end)
+                                 (Label cont)
+                                 (Xor rax type-cons)
+                                 (Push rax)
+                                 (Mov rax (Offset rax 8))
+                                 (type-check t rax next-element)
+                                 (Pop rax)
+                                 (Label end)
+                                 (Mov rdi (imm->bits 5))))]
+          [(TVec t)        (let ([end (gensym 'vec_end)]
+                                 [cont (gensym 'vec_cont)]
+                                 [loop (gensym 'vec_loop)]
+                                 [next-element (gensym 'vec_next)])
+                             (seq (assert-vector-ok mem cont)
+                                  (Jmp end)
+                                  (Label cont)
+                                  (Mov rax mem)
+                                  (Xor rax type-vect)
+                                  (Cmp rax 0)
+                                  (Je ok)
+                                  (Mov r8 (Offset rax 0))
                                   (Jmp loop)
                                   (Label next-element)
                                   (Pop rax)
-                                  (Mov rax (Offset rax 0))
+                                  (Pop r8)
                                   (Label loop)
-                                  (assert-empty-ok rax ok)
-                                  (assert-cons-ok rax cont)
-                                  (Jmp end)
-                                  (Label cont)
-                                  (Xor rax type-cons)
+                                  (Cmp r8 0)
+                                  (Je ok)
+                                  (Sub r8 1)
+                                  (Push r8)
+                                  (Add rax 8)
                                   (Push rax)
-                                  (Mov rax (Offset rax 8))
+                                  (Mov rax (Offset rax 0))
                                   (type-check t rax next-element)
                                   (Pop rax)
+                                  (Pop r8)
                                   (Label end)
-                                  (Mov rdi (imm->bits 5))))])
-          ;[(TVec t)                        ] Let's ignore vectors for now because we need to check each element in vec
+                                  (Mov rdi (imm->bits 6))))])
           ))
 
 ;; -------------- Changes End --------------
