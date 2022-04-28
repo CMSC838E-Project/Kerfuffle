@@ -3,6 +3,7 @@
 #include "values.h"
 #include "print.h"
 #include "runtime.h"
+#include "errors.h"
 
 FILE* in;
 FILE* out;
@@ -25,6 +26,7 @@ int main(int argc, char** argv)
   in = stdin;
   out = stdout;
   error_handler = &error_exit;
+  type_error_handler = &default_type_handler;
   heap = malloc(8 * heap_size);
 
   val_t result;
