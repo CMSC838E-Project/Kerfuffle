@@ -66,6 +66,13 @@
 (define (str-bits? v)
   (zero? (bitwise-xor (bitwise-and v imm-mask) type-str)))
 
+(define (lookup-type f ts)
+  (match ts
+    ['()                                  #f]
+    [(cons (Type f-curr ins out) _)
+      #:when (eq? f f-curr)               (list ins out)]
+    [(cons _ ts)                          (lookup-type f ts)]))
+
 (define (type->string t)
   (match t
     [(TInt)   "Integer"]
