@@ -20,7 +20,7 @@
            (Label 'entry)
            (Mov rbx rdi) ; recv heap pointer
 
-           (compile-e e '() #t)
+           (compile-e e '() #t ts #f)
            (Ret)
            (compile-defines ts ds)
 
@@ -66,20 +66,18 @@
 (define (compile-define ts d)
   (match d
     [(Defn f xs e)
-     (let ([ts (lookup-type f ts)])
+     (let ([ts* (lookup-type f ts)])
       (seq  (Label (symbol->label f))
-            
-            (if ts (type-check-param (first ts) xs)
-                   (seq))
-
-            (compile-e e (reverse xs) (not ts))
+            (compile-e e (reverse xs) (not ts*) ts ts*)
             (Add rsp (* 8 (length xs))) ; pop args
 
-            (if ts  (let  ([ok (gensym)])
+            ; Figure out how to determine if this function is "untyped".
+            ; This should go in compile-app
+            (if ts*  (let  ([ok (gensym)])
                       (seq  (Push rax)
-                            (type-check (last ts) rax ok)
+                            (type-check (last ts*) rax ok)
                             (Pop r8)
-                            (compile-string (type->string (last ts)))
+                            (compile-string (type->string (last ts*)))
                             (raise-error-type rax r8)
                             (Label ok)
                             (Pop rax)))
@@ -163,7 +161,7 @@
 ;; -------------- Changes End --------------
 
 ;; Expr CEnv Bool -> Asm
-(define (compile-e e c t?)
+(define (compile-e e c t? ts typed?)
   (match e
     [(Int i)            (compile-value i)]
     [(Bool b)           (compile-value b)]
@@ -173,14 +171,14 @@
     [(Var x)            (compile-variable x c)]
     [(Str s)            (compile-string s)]
     [(Prim0 p)          (compile-prim0 p c)]
-    [(Prim1 p e)        (compile-prim1 p e c)]
-    [(Prim2 p e1 e2)    (compile-prim2 p e1 e2 c)]
-    [(Prim3 p e1 e2 e3) (compile-prim3 p e1 e2 e3 c)]
-    [(If e1 e2 e3)      (compile-if e1 e2 e3 c t?)]
-    [(Begin e1 e2)      (compile-begin e1 e2 c t?)]
-    [(Let x e1 e2)      (compile-let x e1 e2 c t?)]
-    [(App f es)         (compile-app f es c t?)]
-    [(Match e ps es)    (compile-match e ps es c t?)]))
+    [(Prim1 p e)        (compile-prim1 p e c ts typed?)]
+    [(Prim2 p e1 e2)    (compile-prim2 p e1 e2 c ts typed?)]
+    [(Prim3 p e1 e2 e3) (compile-prim3 p e1 e2 e3 c ts typed?)]
+    [(If e1 e2 e3)      (compile-if e1 e2 e3 c t? ts typed?)]
+    [(Begin e1 e2)      (compile-begin e1 e2 c t? ts typed?)]
+    [(Let x e1 e2)      (compile-let x e1 e2 c t? ts typed?)]
+    [(App f es)         (compile-app f es c t? ts typed?)]
+    [(Match e ps es)    (compile-match e ps es c t? ts typed?)]))
 
 ;; Value -> Asm
 (define (compile-value v)
@@ -218,62 +216,67 @@
   (compile-op0 p))
 
 ;; Op1 Expr CEnv -> Asm
-(define (compile-prim1 p e c)
-  (seq (compile-e e c #f)
+(define (compile-prim1 p e c ts typed?)
+  (seq (compile-e e c #f ts typed?)
        (compile-op1 p)))
 
 ;; Op2 Expr Expr CEnv -> Asm
-(define (compile-prim2 p e1 e2 c)
-  (seq (compile-e e1 c #f)
+(define (compile-prim2 p e1 e2 c ts typed?)
+  (seq (compile-e e1 c #f ts typed?)
        (Push rax)
-       (compile-e e2 (cons #f c) #f)
+       (compile-e e2 (cons #f c) #f ts typed?)
        (compile-op2 p)))
 
 ;; Op3 Expr Expr Expr CEnv -> Asm
-(define (compile-prim3 p e1 e2 e3 c)
-  (seq (compile-e e1 c #f)
+(define (compile-prim3 p e1 e2 e3 c ts typed?)
+  (seq (compile-e e1 c #f ts typed?)
        (Push rax)
-       (compile-e e2 (cons #f c) #f)
+       (compile-e e2 (cons #f c) #f ts typed?)
        (Push rax)
-       (compile-e e3 (cons #f (cons #f c)) #f)
+       (compile-e e3 (cons #f (cons #f c)) #f ts typed?)
        (compile-op3 p)))
 
 ;; Expr Expr Expr CEnv Bool -> Asm
-(define (compile-if e1 e2 e3 c t?)
+(define (compile-if e1 e2 e3 c t? ts typed?)
   (let ((l1 (gensym 'if))
         (l2 (gensym 'if)))
-    (seq (compile-e e1 c #f)
+    (seq (compile-e e1 c #f ts typed?)
          (Cmp rax val-false)
          (Je l1)
-         (compile-e e2 c t?)
+         (compile-e e2 c t? ts typed?)
          (Jmp l2)
          (Label l1)
-         (compile-e e3 c t?)
+         (compile-e e3 c t? ts typed?)
          (Label l2))))
 
 ;; Expr Expr CEnv Bool -> Asm
-(define (compile-begin e1 e2 c t?)
-  (seq (compile-e e1 c #f)
-       (compile-e e2 c t?)))
+(define (compile-begin e1 e2 c t? ts typed?)
+  (seq (compile-e e1 c #f ts typed?)
+       (compile-e e2 c t? ts typed?)))
 
 ;; Id Expr Expr CEnv Bool -> Asm
-(define (compile-let x e1 e2 c t?)
-  (seq (compile-e e1 c #f)
+(define (compile-let x e1 e2 c t? ts typed?)
+  (seq (compile-e e1 c #f ts typed?)
        (Push rax)
-       (compile-e e2 (cons x c) t?)
+       (compile-e e2 (cons x c) t? ts typed?)
        (Add rsp 8)))
 
 ;; Id [Listof Expr] CEnv Bool -> Asm
-(define (compile-app f es c t?)
+(define (compile-app f es c t? ts typed?)
   (if t?
-      (compile-app-tail f es c)
-      (compile-app-nontail f es c)))
+      (compile-app-tail f es c ts typed?)
+      (compile-app-nontail f es c ts typed?)))
 
 ;; Id [Listof Expr] CEnv -> Asm
-(define (compile-app-tail f es c)
-  (seq (compile-es es c)
+(define (compile-app-tail f es c ts typed?)
+  (seq (compile-es es c ts typed?)
        (move-args (length es) (length c))
        (Add rsp (* 8 (length c)))
+       (if (not typed?)
+           (let ([ts (lookup-type f ts)])
+             (if ts (type-check-param (first ts) es)
+                    (seq)))
+           (seq))
        (Jmp (symbol->label f))))
 
 ;; Integer Integer -> Asm
@@ -288,27 +291,32 @@
 ;; Id [Listof Expr] CEnv -> Asm
 ;; The return address is placed above the arguments, so callee pops
 ;; arguments and return address is next frame
-(define (compile-app-nontail f es c)
+(define (compile-app-nontail f es c ts typed?)
   (let ((r (gensym 'ret)))
     (seq (Lea rax r)
          (Push rax)
-         (compile-es es (cons #f c))
+         (compile-es es (cons #f c) ts typed?)
+         (if (not typed?)
+             (let ([ts (lookup-type f ts)])
+               (if ts (type-check-param (first ts) es)
+                      (seq)))
+             (seq))
          (Jmp (symbol->label f))
          (Label r))))
 
 ;; [Listof Expr] CEnv -> Asm
-(define (compile-es es c)
+(define (compile-es es c ts typed?)
   (match es
     ['() '()]
     [(cons e es)
-     (seq (compile-e e c #f)
+     (seq (compile-e e c #f ts typed?)
           (Push rax)
-          (compile-es es (cons #f c)))]))
+          (compile-es es (cons #f c) ts typed?))]))
 
 ;; Expr [Listof Pat] [Listof Expr] CEnv Bool -> Asm
-(define (compile-match e ps es c t?)
+(define (compile-match e ps es c t? ts typed?)
   (let ((done (gensym)))  
-    (seq (compile-e e c #f)
+    (seq (compile-e e c #f ts typed?)
          (Push rax) ; save away to be restored by each clause
          (compile-match-clauses ps es (cons #f c) done t?)
          (Jmp 'raise_error_align)
@@ -316,21 +324,21 @@
          (Add rsp 8)))) ; pop the saved value being matched
 
 ;; [Listof Pat] [Listof Expr] CEnv Symbol Bool -> Asm
-(define (compile-match-clauses ps es c done t?)
+(define (compile-match-clauses ps es c done t? typed?)
   (match* (ps es)
     [('() '()) (seq)]
     [((cons p ps) (cons e es))
-     (seq (compile-match-clause p e c done t?)
-          (compile-match-clauses ps es c done t?))]))
+     (seq (compile-match-clause p e c done t? typed?)
+          (compile-match-clauses ps es c done t? typed?))]))
 
 ;; Pat Expr CEnv Symbol Bool -> Asm
-(define (compile-match-clause p e c done t?)
+(define (compile-match-clause p e c done t? typed?)
   (let ((next (gensym)))
     (match (compile-pattern p '() next)
       [(list i f cm)
        (seq (Mov rax (Offset rsp 0)) ; restore value being matched
             i
-            (compile-e e (append cm c) t?)
+            (compile-e e (append cm c) t? typed?)
             (Add rsp (* 8 (length cm)))
             (Jmp done)
             f
