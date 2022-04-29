@@ -89,13 +89,6 @@
             
         )]))
 
-(define (lookup-type f ts)
-  (match ts
-    ['()                                  #f]
-    [(cons (Type f-curr ins out) _)
-      #:when (eq? f f-curr)               (list ins out)]
-    [(cons _ ts)                          (lookup-type f ts)]))
-
 (define (type-check-param ts xs)
   (match (list ts xs)
     [(list '() '())                         (seq)]
