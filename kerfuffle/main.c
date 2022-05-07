@@ -8,6 +8,7 @@
 FILE* in;
 FILE* out;
 void (*error_handler)();
+void (*type_error_handler)();
 val_t *heap;
 
 void error_exit()

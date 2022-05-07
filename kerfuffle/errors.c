@@ -17,5 +17,5 @@ void default_type_handler(val_t e, val_t actual)
 
 void raise_error_type(val_t e, val_t actual)
 {
-  return type_error_handler(e, actual);
+  type_error_handler(e, actual);
 }

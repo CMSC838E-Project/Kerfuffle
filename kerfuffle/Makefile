@@ -12,7 +12,7 @@ objs = \
 	values.o \
 	print.o \
 	io.o \
-	errors.o
+	errors.o \
 
 default: runtime.o
 
