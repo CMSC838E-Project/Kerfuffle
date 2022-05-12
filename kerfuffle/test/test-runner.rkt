@@ -196,7 +196,20 @@
                         v)))
                  '(func 5))
                  #(5 "a" (5 5)))
+  
+  ;; bad match return example
+  (check-equal? (run 
+    '(: f (-> (Listof String) String))
+    '(define (f lst) (match lst [(cons h t) 1]))
+    '(f (cons "ab" (cons "cd" (cons "ef" '())))))
+    'err)
 
+  ;; good match example
+  (check-equal? (run 
+    '(: f (-> (Listof String) String))
+    '(define (f lst) (match lst [(cons h t) h]))
+    '(f (cons "ab" (cons "cd" (cons "ef" '())))))
+    "ab")
 
 
   ; ;; Abscond examples

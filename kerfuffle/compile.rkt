@@ -77,7 +77,7 @@
                       (seq  (Push rax)
                             (type-check (last ts*) rax ok)
                             (Pop r8)
-                            (compile-string (type->string (last ts*)))
+                            (compile-string (string-append "function " (symbol->string f) " to return value of type " (type->string (last ts*))))
                             (raise-error-type rax r8)
                             (Label ok)
                             (Pop rax)))
@@ -87,16 +87,16 @@
             
         )]))
 
-(define (type-check-param ts xs)
+(define (type-check-param f ts xs)
   (match (list ts xs)
     [(list '() '())                         (seq)]
     [(list (cons t ts) (cons _ xs))         (let ([ok (gensym)]
                                                   [mem (Offset rsp (* 8 (length xs)))]) 
                                               (seq  (type-check t mem ok)
-                                                    (compile-string (type->string t))
+                                                    (compile-string (string-append "function call to " (symbol->string f) " to have parameters of type " (type->string t)))
                                                     (raise-error-type rax mem)
                                                     (Label ok)
-                                                    (type-check-param ts xs)))]))
+                                                    (type-check-param f ts xs)))]))
 
 (define (type-check t mem ok)
   
@@ -274,7 +274,7 @@
        (Add rsp (* 8 (length c)))
        (if (not typed?)
            (let ([ts (lookup-type f ts)])
-             (if ts (type-check-param (first ts) es)
+             (if ts (type-check-param f (first ts) es)
                     (seq)))
            (seq))
        (Jmp (symbol->label f))))
@@ -298,7 +298,7 @@
          (compile-es es (cons #f c) ts typed?)
          (if (not typed?)
              (let ([ts (lookup-type f ts)])
-               (if ts (type-check-param (first ts) es)
+               (if ts (type-check-param f (first ts) es)
                       (seq)))
              (seq))
          (Jmp (symbol->label f))
@@ -318,27 +318,27 @@
   (let ((done (gensym)))  
     (seq (compile-e e c #f ts typed?)
          (Push rax) ; save away to be restored by each clause
-         (compile-match-clauses ps es (cons #f c) done t?)
+         (compile-match-clauses ps es (cons #f c) done t? ts typed?)
          (Jmp 'raise_error_align)
          (Label done)
          (Add rsp 8)))) ; pop the saved value being matched
 
 ;; [Listof Pat] [Listof Expr] CEnv Symbol Bool -> Asm
-(define (compile-match-clauses ps es c done t? typed?)
+(define (compile-match-clauses ps es c done t? ts typed?)
   (match* (ps es)
     [('() '()) (seq)]
     [((cons p ps) (cons e es))
-     (seq (compile-match-clause p e c done t? typed?)
-          (compile-match-clauses ps es c done t? typed?))]))
+     (seq (compile-match-clause p e c done t? ts typed?)
+          (compile-match-clauses ps es c done t? ts typed?))]))
 
 ;; Pat Expr CEnv Symbol Bool -> Asm
-(define (compile-match-clause p e c done t? typed?)
+(define (compile-match-clause p e c done t? ts typed?)
   (let ((next (gensym)))
     (match (compile-pattern p '() next)
       [(list i f cm)
        (seq (Mov rax (Offset rsp 0)) ; restore value being matched
             i
-            (compile-e e (append cm c) t? typed?)
+            (compile-e e (append cm c) t? ts typed?)
             (Add rsp (* 8 (length cm)))
             (Jmp done)
             f
