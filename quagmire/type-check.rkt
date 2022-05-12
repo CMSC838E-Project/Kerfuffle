@@ -17,6 +17,8 @@
   (assert-type-ok ptr-mask type-box))
 (define assert-cons-ok
   (assert-type-ok ptr-mask type-cons))
+(define assert-struct-ok
+  (assert-type-ok ptr-mask type-struct))
 (define (assert-empty-ok r ok)
   (seq  (Mov r8 r)
         (Cmp r8 val-empty)

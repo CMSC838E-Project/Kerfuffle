@@ -9,14 +9,16 @@
 
 (struct Type   (f ins out)    #:prefab)
 
-(struct TInt   ()             #:prefab)
-(struct TChar  ()             #:prefab)
-(struct TStr   ()             #:prefab)
-(struct TBool  ()             #:prefab)
-(struct TAny   ()             #:prefab)
-(struct TList  (t)            #:prefab)
-(struct TVec   (t)            #:prefab)
-(struct TUnion (t1 t2)        #:prefab)
+(struct TInt    ()             #:prefab)
+(struct TChar   ()             #:prefab)
+(struct TStr    ()             #:prefab)
+(struct TBool   ()             #:prefab)
+(struct TAny    ()             #:prefab)
+(struct TStruct ()             #:prefab)
+(struct TList   (t)            #:prefab)
+(struct TVec    (t)            #:prefab)
+(struct TUnion  (t1 t2)        #:prefab)
+
 
 ;; type Expr  = (Eof)
 ;;            | (Quote Datum)

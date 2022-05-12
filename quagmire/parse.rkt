@@ -34,6 +34,7 @@
     ['Char                    (TChar)]
     ['String                  (TStr)]
     ['Boolean                 (TBool)]
+    ['Struct                  (TStruct)]
     ['Any                     (TAny)]
     [(list 'Listof t)         (TList (parse-type t))]
     [(list 'Vectorof t)       (TVec (parse-type t))]

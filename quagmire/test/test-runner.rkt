@@ -197,6 +197,57 @@
                         v)))
                  '(func 5))
                  #(5 "a" (5 5)))
+
+  ;; bad match return example
+  (check-equal? (run 
+    '(: f (-> (Listof String) String))
+    '(define (f lst) (match lst [(cons h t) 1]))
+    '(f (cons "ab" (cons "cd" (cons "ef" '())))))
+    'err)
+
+  ;; good match example
+  (check-equal? (run 
+    '(: f (-> (Listof String) String))
+    '(define (f lst) (match lst [(cons h t) h]))
+    '(f (cons "ab" (cons "cd" (cons "ef" '())))))
+    "ab")
+
+
+  ;; good struct return example
+  (check-equal? (run
+    '(struct Apple (x))
+    '(: f (-> Integer Struct))
+    '(define (f x) (Apple x))
+    '(define (f2 a) (match a [(Apple x) x]))
+    '(f2 (f 5)))
+  5)
+
+
+  ;; bad struct return example
+  (check-equal? (run
+    '(struct Apple (x))
+    '(: f (-> Integer Struct))
+    '(define (f x) "a")
+    '(define (f2 a) (match a [(Apple x) x]))
+    '(f2 (f 5)))
+  'err)
+
+  ;; good struct param example
+  (check-equal? (run
+    '(struct Apple (x))
+    '(: f (-> Struct Integer))
+    '(define (f x) (match x [(Apple x) x]))
+    '(f (Apple 1)))
+  1)
+
+  ;; bad struct param example
+  (check-equal? (run
+    '(struct Apple (x))
+    '(: f (-> Struct Integer))
+    '(define (f x) (match x [(Apple x) x]))
+    '(f 1))
+  'err)
+
 ;   ;; Abscond examples
 ;   (check-equal? (run 7) 7)
 ;   (check-equal? (run -8) -8)

@@ -428,6 +428,7 @@
           [(TChar)              (seq  (assert-char-ok mem ok))]
           [(TStr)               (seq  (assert-string-ok mem ok))]
           [(TBool)              (seq  (assert-bool-ok mem ok))]
+          [(TStruct)            (seq  (assert-struct-ok mem ok))]
           [(TUnion t1 t2)       (seq  (type-check t1 mem ok)
                                       (type-check t2 mem ok))]
           [(TAny)               (seq  (Jmp ok))]

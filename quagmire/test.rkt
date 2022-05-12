@@ -1,5 +1,6 @@
 #lang racket
 
-(: func (-> Integer String Integer String Integer))
-(define (func a b c d) (+ a c))
-(func 5 #\a 6 "bac")
+(struct Apple (x))
+(: f (-> Struct Integer))
+(define (f x) (match x [(Apple x) x]))
+(f 1)

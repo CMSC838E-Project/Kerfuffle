@@ -87,10 +87,11 @@
 
 (define (type->string t)
   (match t
-    [(TInt)   "Integer"]
-    [(TChar)  "Char"]
-    [(TStr)   "String"]
-    [(TBool)  "Boolean"]
+    [(TInt)     "Integer"]
+    [(TChar)    "Char"]
+    [(TStr)     "String"]
+    [(TBool)    "Boolean"]
+    [(TStruct)  "Struct"]
     [(TUnion t1 t2) (string-append 
                      "(Union " (type->string t1) " " (type->string t2) ")")]
     [(TList t)      (string-append "(Listof " (type->string t) ")")]
