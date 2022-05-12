@@ -111,12 +111,14 @@
     (seq (Lea rax r)
          (Push rax)
          (compile-es (cons e es) (cons #f c) ts typed?)
-
-         (if (not typed?)
-            (let ([ts (lookup-type e ts)])
-              (if ts (type-check-param (first ts) es)
-                  (seq)))
-                  (seq))
+         
+        ; TODO currently only works by assuming the func value is a variable (function name), will have to change for lambda
+        (let ([f (match e [(Var f) f])])
+          (if (not typed?)
+              (let ([ts (lookup-type f ts)])
+                (if ts (type-check-param (cons (TAny) (first ts)) (cons e es))
+                        (seq)))
+              (seq)))
 
          (Mov rax (Offset rsp i))
          (assert-proc rax)
