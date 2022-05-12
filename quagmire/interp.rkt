@@ -2,7 +2,8 @@
 (provide interp interp-env)
 (require "ast.rkt"
          "env.rkt"
-         "interp-prims.rkt")
+         "interp-prims.rkt"
+         "types.rkt")
 
 ;; type Answer = Value | 'err
 
@@ -26,64 +27,78 @@
 ;; Prog -> Answer
 (define (interp p)
   (match p
-    [(Prog ds e)
-     (interp-env e '() ds)]))
+    [(Prog ts ds e)
+     (interp-env e '() ds ts)]))
 
 ;; Expr Env Defns -> Answer
-(define (interp-env e r ds)
+(define (interp-env e r ds ts)
   (match e
     [(Quote d)  d]
     [(Eof)    eof]
-    [(Var x)  (interp-var x r ds)]
+    [(Var x)  (interp-var x r ds ts)]
     [(Prim p es)
-     (match (interp-env* es r ds)
+     (match (interp-env* es r ds ts)
        ['err 'err]
        [vs (interp-prim p vs)])]    
     [(If p e1 e2)
-     (match (interp-env p r ds)
+     (match (interp-env p r ds ts)
        ['err 'err]
        [v
         (if v
-            (interp-env e1 r ds)
-            (interp-env e2 r ds))])]
+            (interp-env e1 r ds ts)
+            (interp-env e2 r ds ts))])]
     [(Begin e1 e2)
-     (match (interp-env e1 r ds)
+     (match (interp-env e1 r ds ts)
        ['err 'err]
-       [_    (interp-env e2 r ds)])]
+       [_    (interp-env e2 r ds ts)])]
     [(Let x e1 e2)
-     (match (interp-env e1 r ds)
+     (match (interp-env e1 r ds ts)
        ['err 'err]
-       [v (interp-env e2 (ext r x v) ds)])]
+       [v (interp-env e2 (ext r x v) ds ts)])]
     [(Lam _ xs e)
      (λ vs
        ; check arity matches
        (if (= (length xs) (length vs))
-           (interp-env e (append (zip xs vs) r) ds)
+           (interp-env e (append (zip xs vs) r) ds ts)
            'err))]
     [(App e es)
-     (match (interp-env e r ds)
+     (match (interp-env e r ds ts)
        ['err 'err]
        [f
-        (match (interp-env* es r ds)
+        (match (interp-env* es r ds ts)
           ['err 'err]
           [vs
-           (if (procedure? f)
-               (apply f vs)
-               'err)])])]
+            (if (procedure? f)
+              (match e
+                ;; TODO --> for now we only perform type checking for non-lambda functions
+                [(Var fname) (interp-app f fname vs ds ts)]
+                [_ (apply f vs)])
+              'err)])])]
     [(Match e ps es)
-     (match (interp-env e r ds)
+     (match (interp-env e r ds ts)
        ['err 'err]
        [v
-        (interp-match v ps es r ds)])]))
+        (interp-match v ps es r ds ts)])]))
+
+(define (interp-app f fname vs ds ts)
+  (let ([ts* (lookup-type fname ts)])
+    (if ts*
+      (if (check-parameters vs (first ts*))
+        (let ([ret (apply f vs)])
+          (if (check-type ret (last ts*))
+              ret
+              'err))
+        'err)
+      (apply f vs))))
 
 ;; Value [Listof Pat] [Listof Expr] Env Defns -> Answer
-(define (interp-match v ps es r ds)
+(define (interp-match v ps es r ds ts)
   (match* (ps es)
     [('() '()) 'err]
     [((cons p ps) (cons e es))
      (match (interp-match-pat p v r)
-       [#f (interp-match v ps es r ds)]
-       [r  (interp-env e r ds)])]))
+       [#f (interp-match v ps es r ds ts)]
+       [r  (interp-env e r ds ts)])]))
 
 ;; Pat Value Env -> [Maybe Env]
 (define (interp-match-pat p v r)
@@ -128,21 +143,21 @@
           [r1 (interp-match-pats ps vs r1)])])]))
 
 ;; Id Env [Listof Defn] -> Answer
-(define (interp-var x r ds)
+(define (interp-var x r ds ts)
   (match (lookup r x)
     ['err (match (defns-lookup ds x)
-            [(Defn f xs e) (interp-env (Lam f xs e) '() ds)]
+            [(Defn f xs e) (interp-env (Lam f xs e) '() ds ts)]
             [#f 'err])]
     [v v]))
 
 ;; (Listof Expr) REnv Defns -> (Listof Value) | 'err
-(define (interp-env* es r ds)
+(define (interp-env* es r ds ts)
   (match es
     ['() '()]
     [(cons e es)
-     (match (interp-env e r ds)
+     (match (interp-env e r ds ts)
        ['err 'err]
-       [v (match (interp-env* es r ds)
+       [v (match (interp-env* es r ds ts)
             ['err 'err]
             [vs (cons v vs)])])]))
 
@@ -157,3 +172,28 @@
     [((cons x xs) (cons y ys))
      (cons (list x y)
            (zip xs ys))]))
+
+(define (check-parameters vs ts)
+  (match* (vs ts)
+    [('() '()) #t]
+    [((cons v vs) (cons t ts))
+     (and (check-type v t) (check-parameters vs ts))]))
+
+(define (check-type v t)
+  (match t
+    [(TInt)     (integer? v)]
+    [(TChar)    (char? v)]
+    [(TStr)     (string? v)]
+    [(TBool)    (boolean? v)]
+    [(TAny)     #t]
+    [(TList t)  (if (empty? v)
+                    #t
+                    (and (cons? v)
+                         (check-type (car v) t)
+                         (check-type (cdr v) (TList t))))]
+    [(TVec t)       (and (vector? v)
+                         (for/fold ([b #t])
+                                   ([x (in-vector v)])
+                           (and b (check-type x t))))]
+    [(TUnion t1 t2) (or (check-type v t1)
+                        (check-type v t2))]))

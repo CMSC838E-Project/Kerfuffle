@@ -132,7 +132,7 @@
     [('() '()) 'err]
     [((cons p ps) (cons e es))
      (match (interp-match-pat p v r)
-       [#f (interp-match v ps es r ds)]
+       [#f (interp-match v ps es r ds ts)]
        [r  (interp-env e r ds ts)])]))
 
 ;; Pat Value Env -> [Maybe Env]
