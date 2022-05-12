@@ -1,4 +1,4 @@
-#lang typed/racket
+#lang racket
 
 (: f (-> (Vectorof (Union Integer (Union String (Listof Integer)))) String))
 
