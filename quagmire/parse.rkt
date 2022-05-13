@@ -118,6 +118,8 @@
               (andmap symbol? xs))
          (Lam (gensym 'lambda) xs (parse-e e))
          (error "parse lambda error"))]
+    [(cons 'and es) (And-op (map parse-e es))]
+    [(cons 'or  es) (Or-op  (map parse-e es))]
     [(cons e es)
      (App (parse-e e) (map parse-e es))]
     [_ (error "Parse error" s)]))
@@ -170,7 +172,7 @@
   '(read-byte peek-byte void))
 (define op1
   '(add1 sub1 zero? char? write-byte eof-object?
-         integer->char char->integer
+         integer? integer->char char->integer
          box unbox empty? cons? box? car cdr
          vector? vector-length string? string-length
          symbol? symbol->string string->symbol string->uninterned-symbol))
