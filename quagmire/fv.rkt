@@ -17,6 +17,8 @@
     [(App e1 es)        (append (fv* e1) (append-map fv* es))]
     [(Lam f xs e)       (remq* xs (fv* e))]
     [(Match e ps es)    (append (fv* e) (append-map fv-clause* ps es))]
+    [(And-op es)        (append-map fv* es)]
+    [(Or-op es)         (append-map fv* es)]
     [_                  '()]))
 
 ;; Pat Expr -> [Listof Id]
