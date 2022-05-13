@@ -81,8 +81,8 @@
 (define (lookup-type f ts)
   (match ts
     ['()                                  #f]
-    [(cons (Type f-curr ins out) _)
-      #:when (eq? f f-curr)               (list ins out)]
+    [(cons (Type f-curr type) _)
+      #:when (eq? f f-curr)               type]
     [(cons _ ts)                          (lookup-type f ts)]))
 
 (define (type->string t)
@@ -92,6 +92,7 @@
     [(TStr)     "String"]
     [(TBool)    "Boolean"]
     [(TStruct)  "Struct"]
+    [(TFunc ins out)  (string-append "(->" (apply string-append (map type->string ins)) (type->string out) ")")]
     [(TUnion t1 t2) (string-append 
                      "(Union " (type->string t1) " " (type->string t2) ")")]
     [(TList t)      (string-append "(Listof " (type->string t) ")")]

@@ -15,7 +15,7 @@
      (match (parse s)
        [(Prog ts ds e)
         (Prog ts (cons (parse-define d) ds) e)])]
-    [(cons (and (cons ': _) t) s)
+    [(cons (cons ': t) s)
         (match (parse s)
           [(Prog ts ds e)
           (Prog (cons (parse-type-def t) ts) ds e)])]
@@ -25,8 +25,8 @@
 ;; [Listof S-Expr -> Type]
 (define (parse-type-def s)
   (match s
-    [(list ': (? symbol? f) (list '-> ins ... out))
-      (Type f (map parse-type ins) (parse-type out))]))
+    [(list (? symbol? f) types)
+      (Type f (parse-type types))]))
 
 (define (parse-type t)
   (match t
@@ -36,6 +36,7 @@
     ['Boolean                 (TBool)]
     ['Struct                  (TStruct)]
     ['Any                     (TAny)]
+    ((list '-> ins ... out)   (TFunc (map parse-type ins) out))
     [(list 'Listof t)         (TList (parse-type t))]
     [(list 'Vectorof t)       (TVec (parse-type t))]
     [(list 'Union t1 t2)      (TUnion (parse-type t1) (parse-type t2))]
