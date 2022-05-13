@@ -42,6 +42,13 @@
     ['Character "Character"]
     ['String "String"]
     ['Any "Any"]
-    [(Listof t) "Listof"]
-    [(Vectorof t) "Vectorof"]
-    [(Union t1 t2) "Union"]))
+    [(Listof t) (string-append "(Listof "
+                               (string-append (type->string t)
+                                              ")"))]
+    [(Vectorof t) (string-append "(Vectorof "
+                                 (string-append (type->string t)
+                                                ")"))]
+    [(Union t1 t2) (string-append "(Union "
+                                  (string-append (type->string t1)
+                                                 (string-append " "
+                                                                (string-append (type->string t2) ")"))))]))
