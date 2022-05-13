@@ -52,6 +52,7 @@
        (Extern 'raise_error)
        (Extern 'raise_error_type)
        (Extern 'intern_symbol)
+       (Extern 'string_append)
        (Extern 'symb_cmp)
        (Extern 'memcpy)))
 

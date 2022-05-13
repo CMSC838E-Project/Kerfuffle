@@ -175,7 +175,8 @@
          vector? vector-length string? string-length
          symbol? symbol->string string->symbol string->uninterned-symbol))
 (define op2
-  '(+ - < = cons eq? make-vector vector-ref make-string string-ref raise-type-error))
+  '(+ - < = cons eq? make-vector vector-ref 
+      make-string string-append string-ref raise-type-error))
 (define op3
   '(vector-set!))
 
