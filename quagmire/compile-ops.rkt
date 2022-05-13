@@ -291,6 +291,11 @@
             (Label f)
             (Mov rax (imm->bits #f))
             (Label t)))]
+
+     ['raise-type-error
+      (seq (Pop rdi)
+           (Mov rsi rax)
+           (Jmp 'raise_error_type_align))]
       
     ;; Op3
     ['vector-set!

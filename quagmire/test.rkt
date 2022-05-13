@@ -1,5 +1,3 @@
-#lang racket
+#lang typed/racket
 
-(: func (-> Integer String Integer String Integer))
-(define (func a b c d) (+ a c))
-(func 5 #\a 6 "bac")
+(ann-error (cons 3 (cons #f (cons 3 '()))) (Listof (Union 'Integer 'String)))
