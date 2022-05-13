@@ -11,6 +11,7 @@ objs = \
 	main.o \
 	values.o \
 	print.o \
+	string.o \
 	symbol.o \
 	io.o \
 	errors.o \

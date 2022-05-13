@@ -291,6 +291,37 @@
             (Label f)
             (Mov rax (imm->bits #f))
             (Label t)))]
+
+     ['raise-type-error
+      (seq (Pop rdi)
+           (Mov rsi rax)
+           (Jmp 'raise_error_type_align))]
+
+     ['string-append
+     (seq (Pop r8)
+          (assert-string r8)
+          (assert-string rax)
+          (Xor r8 type-str)
+          (Xor rax type-str)
+          (Mov 'rdi r8)
+          (Mov 'rsi rax)
+          (Mov rdx rbx)
+          pad-stack
+          (Call 'string_append)
+          unpad-stack
+          (Mov r8 rax)
+          (Cmp r8 0)
+          (let ((empty (gensym))
+               (done (gensym)))
+          (seq  (Je empty)
+               (Sal r8 2)
+               (Mov rax rbx)
+               (Or rax type-str)
+               (Add rbx r8)
+               (Jmp done)
+               (Label empty)
+               (Mov rax type-str)
+               (Label done))))]
       
     ;; Op3
     ['vector-set!

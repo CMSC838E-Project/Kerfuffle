@@ -514,7 +514,7 @@
 (define (compile-and-inner es short c t? ts typed?)
   (match es
     ['()          (seq)]
-    [(cons e es)  (seq (compile-e e c t? ts typed?)
+    [(cons e es)  (seq (compile-e e c #f ts typed?)
                        (Cmp rax val-false)
                        (Je short)
                        (compile-and-inner es short c t? ts typed?))]))
@@ -528,7 +528,7 @@
 (define (compile-or-inner es short c t? ts typed?)
   (match es
     ['()          (seq)]
-    [(cons e es)  (seq (compile-e e c t? ts typed?)
+    [(cons e es)  (seq (compile-e e c #f ts typed?)
                        (Cmp rax val-false)
                        (Jne short)
                        (compile-and-inner es short c t? ts typed?))]))

@@ -1,6 +1,3 @@
-#lang racket
+#lang typed/racket
 
-(struct Apple (x))
-(: f (-> Struct Integer))
-(define (f x) (match x [(Apple x) x]))
-(f 1)
+(ann-error (cons 3 (cons #f (cons 3 '()))) (Listof (Union 'Integer 'String)))
