@@ -81,6 +81,8 @@
 (struct Lam   (f xs e)     #:prefab)
 (struct Quote (d)          #:prefab)
 (struct Match (e ps es)    #:prefab)
+(struct And-op(es)         #:prefab)
+(struct Or-op (es)         #:prefab)
 
 (struct PVar  (x)          #:prefab)
 (struct PWild ()           #:prefab)

@@ -28,7 +28,9 @@
     [(Let x e1 e2)      (compile-let x e1 e2 c t? ts typed?)]
     [(App e es)         (compile-app e es c t? ts typed?)]
     [(Lam f xs e)       (compile-lam f xs e c ts typed? ts)]
-    [(Match e ps es)    (compile-match e ps es c t? ts typed?)]))
+    [(Match e ps es)    (compile-match e ps es c t? ts typed?)]
+    [(And-op es)           (compile-and es c t? ts typed?)]
+    [(Or-op es)            (compile-or es c t? ts typed?)]))
 
 ;; Id CEnv -> Asm
 (define (compile-variable x c)
@@ -503,5 +505,32 @@
      (seq (Mov rax (char->integer c))
           (Mov (Offset rbx i) 'eax)
           (compile-string-chars cs (+ 4 i)))]))
+
+(define (compile-and es c t? ts typed?)
+  (let ([and-short (gensym 'and_short)])
+    (seq (compile-and-inner es and-short c t? ts typed?)
+         (Label and-short))))
+
+(define (compile-and-inner es short c t? ts typed?)
+  (match es
+    ['()          (seq)]
+    [(cons e es)  (seq (compile-e e c t? ts typed?)
+                       (Cmp rax val-false)
+                       (Je short)
+                       (compile-and-inner es short c t? ts typed?))]))
+
+
+(define (compile-or es c t? ts typed?)
+  (let ([or-short (gensym 'or_short)])
+    (seq (compile-or-inner es or-short c t? ts typed?)
+         (Label or-short))))
+
+(define (compile-or-inner es short c t? ts typed?)
+  (match es
+    ['()          (seq)]
+    [(cons e es)  (seq (compile-e e c t? ts typed?)
+                       (Cmp rax val-false)
+                       (Jne short)
+                       (compile-and-inner es short c t? ts typed?))]))
 
 ;; -------------- Changes End --------------

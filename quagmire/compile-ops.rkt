@@ -42,6 +42,8 @@
      (seq (assert-char rax)
           (Sar rax char-shift)
           (Sal rax int-shift))]
+    ['integer?
+     (type-pred mask-int type-int)]
     ['integer->char
      (seq (assert-codepoint rax)
           (Sar rax int-shift)
