@@ -7,7 +7,7 @@
 ;; type Defn = (Defn Id (Listof Id) Expr)
 (struct Defn (f xs e) #:prefab)
 
-(struct Type   (f type)        #:prefab)
+(struct Type    (f type)        #:prefab)
 
 (struct TInt    ()             #:prefab)
 (struct TChar   ()             #:prefab)

@@ -1,22 +1,50 @@
 #lang racket
-(provide parse parse-define parse-e parse-struct)
+(provide parse parse-define parse-e parse-struct get-lam-e)
 (require "ast.rkt")
 
 ;; -------------- Changes Start --------------
 
-;; [Listof S-Expr] -> Prog
 (define (parse s)
+  (match (parse-base s)
+    [(Prog ts ds e)
+     (Prog (append (get-lam-def ds) (get-lam-e e) ts) ds e)]))
+
+(define (get-lam-def ds)
+  (match ds
+    ['() '()]
+    [(cons (Defn _ _ e) ds)
+     (append (get-lam-e e) (get-lam-def ds))]))
+
+(define (get-lam-e e)
+  (match e
+    [(Quote d)          '()]
+    [(Eof)              '()]
+    [(Var x)            '()]
+    [(Prim p es)        (apply append (map get-lam-e es))]
+    [(If e1 e2 e3)      (append (get-lam-e e1) (get-lam-e e2) (get-lam-e e3))]
+    [(Begin e1 e2)      (append (get-lam-e e1) (get-lam-e e2))]
+    [(Let x e1 e2)      (append (get-lam-e e1) (get-lam-e e2))]
+    [(App e es)         (append (get-lam-e e) (apply append (map get-lam-e es)))]
+    [(Lam f xs e)       (append (list (Type f (TFunc '((TAny)) (TAny)))) (get-lam-e e))]
+    [(Match e ps es)    (append (get-lam-e e) (apply append (map get-lam-e es)))]
+    [(And-op es)        (apply append (map get-lam-e es))]
+    [(Or-op es)         (apply append (map get-lam-e es))]
+  )
+)
+
+;; [Listof S-Expr] -> Prog
+(define (parse-base s)
   (match s
     [(cons (and (cons 'struct _) d) s)
-     (match (parse s)
+     (match (parse-base s)
        [(Prog ts ds e)
         (Prog ts (append (parse-struct d) ds) e)])]
     [(cons (and (cons 'define _) d) s)
-     (match (parse s)
+     (match (parse-base s)
        [(Prog ts ds e)
         (Prog ts (cons (parse-define d) ds) e)])]
     [(cons (cons ': t) s)
-        (match (parse s)
+        (match (parse-base s)
           [(Prog ts ds e)
           (Prog (cons (parse-type-def t) ts) ds e)])]
     [(cons e '()) (Prog '() '() (parse-e e))]
