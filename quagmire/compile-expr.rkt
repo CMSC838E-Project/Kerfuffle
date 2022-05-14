@@ -36,7 +36,7 @@
 ;; Id CEnv -> Asm
 (define (compile-variable x c)
   (match (lookup x c)
-    [#f "unbound variable")] ;(seq (Lea rax (symbol->label x)))]
+    [#f "unbound variable"] ;(seq (Lea rax (symbol->label x)))]
     [i  (seq (Mov rax (Offset rsp i)))]))
 
 ;; Op (Listof Expr) CEnv -> Asm
