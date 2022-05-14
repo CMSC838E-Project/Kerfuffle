@@ -85,15 +85,7 @@
                   [#f #f]
                   [(TFunc ins out) ins])
                 #f)))
-    (seq (compile-es (if ts*
-                         (cons e
-                               (map (λ (e t)
-                                      (App (Var 'ann-error)
-                                           (list e
-                                                 (type->runtime-struct t))))
-                                    es
-                                    ts*))
-                         (cons e es))
+    (seq (compile-es (cons e es)
                      c ts typed?)
          (move-args (add1 (length es)) (length c))
          (Add rsp (* 8 (length c)))
@@ -126,15 +118,7 @@
                 #f)))
     (seq (Lea rax r)
          (Push rax)
-         (compile-es (if ts*
-                         (cons e
-                               (map (λ (e t)
-                                      (App (Var 'ann-error)
-                                           (list e
-                                                 (type->runtime-struct t))))
-                                    es
-                                    ts*))
-                         (cons e es))
+         (compile-es (cons e es)
                      (cons #f c) ts typed?)
 
          (Mov rax (Offset rsp i))

@@ -1,10 +1,57 @@
 #lang racket
 (provide parse parse-define parse-e parse-struct get-lam-e type->runtime-struct)
-(require "ast.rkt")
+(require "ast.rkt" "types.rkt")
 
 ;; -------------- Changes Start --------------
 
 (define (parse s)
+  (match (parse-get-lam-types s)
+    [(Prog ts ds e)
+     (Prog ts (insert-check-def ds ts) (insert-check e ts #f))]
+  )
+)
+
+(define (insert-check-def ds ts)
+  (match ds
+    ['() '()]
+    [(cons (Defn f xs e) ds)
+     (let ([ts* (lookup-type f ts)])
+      (cons (Defn f xs (insert-check e ts ts*)) (insert-check-def ds ts)))]))
+
+(define (insert-check e ts typed?)
+  (match e
+    [(Prim p es)        (Prim p (map (lambda (x) (insert-check x ts typed?)) es))]
+    [(If e1 e2 e3)      (If (insert-check e1 ts typed?) (insert-check e2 ts typed?) (insert-check e3 ts typed?))]
+    [(Begin e1 e2)      (Begin (insert-check e1 ts typed?) (insert-check e2 ts typed?))]
+    [(Let x e1 e2)      (Let x (insert-check e1 ts typed?) (insert-check e2 ts typed?))]
+    [(App e es)         (insert-check-app e es ts typed?)]
+    [(Lam f xs e)       (Lam f xs (insert-check e ts typed?))]
+    [(Match e ps es)    (Match (insert-check e ts typed?) ps
+                        (map (lambda (x) (insert-check x ts typed?)) es))]
+    [(And-op es)        (And-op (map (lambda (x) (insert-check x ts typed?)) es))]
+    [(Or-op es)         (Or-op (map (lambda (x) (insert-check x ts typed?)) es))]
+    [r                  r]
+  )
+)
+
+(define (insert-check-app e es ts typed?)
+  (let ([ts* (if (not typed?)
+                  (match (lookup-type (match e [(Var f) f]) ts)
+                    [#f #f]
+                    [(TFunc ins out) ins])
+                  #f)]
+        [es (map (lambda (x) (insert-check x ts typed?)) es)])
+        (if ts*
+          (App e
+                (map (λ (e t)
+                        (App (Var 'ann-error)
+                            (list e
+                                  (type->runtime-struct t))))
+                      es
+                      ts*))
+          (App e es))))
+
+(define (parse-get-lam-types s)
   (match (parse-base s)
     [(Prog ts ds e)
      (Prog (append (get-lam-def ds) (get-lam-e e) ts) ds e)]))
