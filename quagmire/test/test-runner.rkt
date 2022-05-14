@@ -10,13 +10,6 @@
                  '1)
                 1)
 
-  ; NOTE: This only works because we disabled tail recursion for typed funcs
-  (check-equal? (run
-                 '(: func (-> Integer String))
-                 '(define (func2) 1)
-                 '(define (func a) (func2))
-                 '(func 5))
-                'err)
   ;; valid bool
   (check-equal? (run
                  '(: func (-> Integer String Boolean String))
@@ -68,23 +61,6 @@
                  '(define (func2 a b) (+ (string-length b) a))
                  '(func 5 #\a 6 "bac"))
                 11)
-
-  ;; bad return
-  (check-equal? (run
-                 '(: func (-> Integer Char Integer String String))
-                 '(define (func a b c d) (+ a c))
-                 '(func 5 #\a 6 "bac"))
-                'err)
-
-  ;; bad return 2
-  (check-equal? (run
-                 '(: func2 (-> Integer String Char))
-                 '(: func (-> Integer Char Integer String Integer))
-                 '(define (func a b c d) (+ a c))
-                 '(define (func2 a b) (+ (string-length b) a))
-                 '(func2 5 "bac"))
-                'err)
-
 
 
   ;; bad param
@@ -142,12 +118,6 @@
 
   (check-equal? (run
                  '(: func (-> Integer (Listof (Union Integer (Union String (Listof Integer))))))
-                 '(define (func x) (cons x (cons "string" (cons (cons "str" '()) '()))))
-                 '(func 5))
-                 'err)
-
-  (check-equal? (run
-                 '(: func (-> Integer (Listof (Union Integer (Union String (Listof Integer))))))
                  '(define (func x) (cons x (cons "string" (cons (cons x '()) '()))))
                  '(func 5))
                  (list 5 "string" (list 5)))
@@ -181,29 +151,10 @@
                       (begin
                         (begin
                           (vector-set! v 1 "a")
-                          (vector-set! v 2 (cons "1" (cons x '()))))
-                        v)))
-                 '(func 5))
-                 'err)
-
-  (check-equal? (run
-                 '(: func (-> Integer (Vectorof (Union Integer (Union String (Listof Integer))))))
-                 '(define (func x)
-                    (let ([v (make-vector 3 x)])
-                      (begin
-                        (begin
-                          (vector-set! v 1 "a")
                           (vector-set! v 2 (cons x (cons x '()))))
                         v)))
                  '(func 5))
                  #(5 "a" (5 5)))
-
-  ;; bad match return example
-  (check-equal? (run 
-    '(: f (-> (Listof String) String))
-    '(define (f lst) (match lst [(cons h t) 1]))
-    '(f (cons "ab" (cons "cd" (cons "ef" '())))))
-    'err)
 
   ;; good match example
   (check-equal? (run 

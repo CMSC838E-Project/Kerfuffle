@@ -18,6 +18,7 @@
 (define (ann* v t)
   (match t
     ['Integer (integer? v)]
+    ['Boolean (boolean? v)]
     ['Character (char? v)]
     ['String (string? v)]
     ['Any #t]

@@ -19,7 +19,7 @@
 
 ;; Expr CEnv Bool -> Asm
 (define (compile-e e c t? ts typed?)
-  (match e
+   (match e
     [(Quote d)          (compile-datum d)]
     [(Eof)              (seq (Mov rax (imm->bits eof)))]
     [(Var x)            (compile-variable x c)]
@@ -174,11 +174,11 @@
 
 ;; Lam -> Asm
 (define (compile-lambda-define l ts)
-  (let ((fvs (fv l)))
+  (let ([fvs (fv l)])
     (match l
       [(Lam f xs e)
 
-
+        
         (let ([ts* (lookup-type f ts)]
               [env  (append (reverse fvs) (reverse xs) (list #f))])
 

@@ -200,7 +200,7 @@
   '(read-byte peek-byte void))
 (define op1
   '(add1 sub1 zero? char? write-byte eof-object?
-         integer? integer->char char->integer
+         integer? boolean? integer->char char->integer
          box unbox empty? cons? box? car cdr
          vector? vector-length string? string-length
          symbol? symbol->string string->symbol string->uninterned-symbol))
@@ -221,6 +221,7 @@
 (define (type->runtime-struct* t)
   (match t
     [(TInt) ''Integer]
+    [(TBool) ''Boolean]
     [(TChar) ''Character]
     [(TStr) ''String]
     [(TAny) ''Any]

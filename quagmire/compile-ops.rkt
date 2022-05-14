@@ -42,6 +42,16 @@
      (seq (assert-char rax)
           (Sar rax char-shift)
           (Sal rax int-shift))]
+    ['boolean?
+     (let ([ok (gensym)])
+          (seq (Mov r8 rax)
+               (Mov rax (imm->bits #t))
+               (Cmp r8 val-true)
+               (Je ok)
+               (Cmp r8 val-false)
+               (Je ok)
+               (Mov rax (imm->bits #f))
+               (Label ok)))]
     ['integer?
      (type-pred mask-int type-int)]
     ['integer->char
