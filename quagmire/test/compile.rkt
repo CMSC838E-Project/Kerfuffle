@@ -3,6 +3,7 @@
          "../parse.rkt"
          "../compile.rkt"
          "../unload-bits-asm.rkt"
+         "../read-all.rkt"
          a86/interp)
 
 ;; link with runtime for IO operations
@@ -11,8 +12,16 @@
 (current-objs
  (list (path->string (normalize-path "../runtime.o"))))
 
-(test-runner    (λ p (unload/free (asm-interp (compile (parse p))))))
-(test-runner-io (λ (s . p)
-                  (match (asm-interp/io (compile (parse p)) s)
-                    ['err 'err]
-                    [(cons r o) (cons (unload/free r) o)])))
+(let ((p (open-input-file "../type-match.rkt")))
+  (read-line p)
+  (read-line p)
+  (let ((match-lib (read-all p)))
+    (test-runner    (λ p (unload/free (asm-interp (compile (parse (append match-lib
+                                                                          p)))))))
+    (test-runner-io (λ (s . p)
+                      (match (asm-interp/io (compile (parse (append match-lib
+                                                                    p))) s)
+                        ['err 'err]
+                        [(cons r o) (cons (unload/free r) o)]))))
+  
+  (close-input-port p))
