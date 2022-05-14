@@ -1,6 +1,7 @@
 #lang racket
 (provide (all-defined-out))
 (require "ast.rkt"
+         "parse.rkt"
          "types.rkt"
          "type-check.rkt"
          "lambdas.rkt"
@@ -35,12 +36,12 @@
 ;; Id CEnv -> Asm
 (define (compile-variable x c)
   (match (lookup x c)
-    [#f (error "unbound variable")] ;(seq (Lea rax (symbol->label x)))]
+    [#f (error (list "unbound variable" x))] ;(seq (Lea rax (symbol->label x)))]
     [i  (seq (Mov rax (Offset rsp i)))]))
 
 ;; Op (Listof Expr) CEnv -> Asm
 (define (compile-prim p es c ts typed?)
-  (seq (compile-es* es c ts typed?)  
+  (seq (compile-es* es c ts typed?)
        (match p
          ['make-struct (compile-make-struct (length es))]
          [_ (compile-op p)])))
@@ -79,21 +80,29 @@
 
 ;; Expr [Listof Expr] CEnv -> Asm
 (define (compile-app-tail e es c ts typed?)
-  (seq (compile-es (cons e es) c ts typed?)
-       (move-args (add1 (length es)) (length c))
-       (Add rsp (* 8 (length c)))
-       ; TODO currently only works by assuming the func value is a variable (function name), will have to change for lambda
-       (let ([f (match e [(Var f) f])])
-        (if (not typed?)
-            (let ([ts (lookup-type f ts)])
-              (if ts (type-check-param (cons (TAny) (first ts)) (cons e es))
-                      (seq)))
-            (seq)))
-       (Mov rax (Offset rsp (* 8 (length es))))
-       (assert-proc rax)
-       (Xor rax type-proc)
-       (Mov rax (Offset rax 0))
-       (Jmp rax)))
+  (let ((ts* (if (not typed?)
+                (match (lookup-type (match e [(Var f) f]) ts)
+                  [#f #f]
+                  [(TFunc ins out) ins])
+                #f)))
+    (seq (compile-es (if ts*
+                         (cons e
+                               (map (λ (e t)
+                                      (App (Var 'ann-error)
+                                           (list e
+                                                 (type->runtime-struct t))))
+                                    es
+                                    ts*))
+                         (cons e es))
+                     c ts typed?)
+         (move-args (add1 (length es)) (length c))
+         (Add rsp (* 8 (length c)))
+
+         (Mov rax (Offset rsp (* 8 (length es))))
+         (assert-proc rax)
+         (Xor rax type-proc)
+         (Mov rax (Offset rax 0))
+         (Jmp rax))))
 
 ;; Integer Integer -> Asm
 (define (move-args i off)
@@ -109,18 +118,24 @@
 ;; arguments and return address is next frame
 (define (compile-app-nontail e es c ts typed?)
   (let ((r (gensym 'ret))
-        (i (* 8 (length es))))
+        (i (* 8 (length es)))
+        (ts* (if (not typed?)
+                (match (lookup-type (match e [(Var f) f]) ts)
+                  [#f #f]
+                  [(TFunc ins out) ins])
+                #f)))
     (seq (Lea rax r)
          (Push rax)
-         (compile-es (cons e es) (cons #f c) ts typed?)
-         
-        ; TODO currently only works by assuming the func value is a variable (function name), will have to change for lambda
-        (let ([f (match e [(Var f) f])])
-          (if (not typed?)
-              (let ([ts (lookup-type f ts)])
-                (if ts (type-check-param (cons (TAny) (first ts)) (cons e es))
-                        (seq)))
-              (seq)))
+         (compile-es (if ts*
+                         (cons e
+                               (map (λ (e t)
+                                      (App (Var 'ann-error)
+                                           (list e
+                                                 (type->runtime-struct t))))
+                                    es
+                                    ts*))
+                         (cons e es))
+                     (cons #f c) ts typed?)
 
          (Mov rax (Offset rsp i))
          (assert-proc rax)
@@ -176,18 +191,6 @@
 
                     
                     (Add rsp (* 8 (length env))) ; pop env
-
-                    ; Figure out how to determine if this function is "untyped".
-                    ; This should go in compile-app
-                    (if ts*  (let  ([ok (gensym)])
-                              (seq  (Push rax)
-                                    (type-check (last ts*) rax ok)
-                                    (Pop r8)
-                                    (compile-string (type->string (last ts*)))
-                                    (raise-error-type rax r8)
-                                    (Label ok)
-                                    (Pop rax)))
-                            (seq))
 
                     (Ret))
                     
@@ -412,99 +415,6 @@
         (Mov rsi actual)
         (Jmp 'raise_error_type_align)))
 
-(define (type-check-param ts xs)
-  (match (list ts xs)
-    [(list '() '())                         (seq)]
-    [(list (cons t ts) (cons _ xs))         (let ([ok (gensym)]
-                                                  [mem (Offset rsp (* 8 (length xs)))]) 
-                                              (seq  (type-check t mem ok)
-                                                    (compile-string (type->string t))
-                                                    (raise-error-type rax mem)
-                                                    (Label ok)
-                                                    (type-check-param ts xs)))]))
-
-(define (type-check t mem ok)
-  
-  (seq  (match t
-          [(TInt)               (seq  (assert-integer-ok mem ok))]
-          [(TChar)              (seq  (assert-char-ok mem ok))]
-          [(TStr)               (seq  (assert-string-ok mem ok))]
-          [(TBool)              (seq  (assert-bool-ok mem ok))]
-          [(TStruct)            (seq  (assert-struct-ok mem ok))]
-          [(TUnion t1 t2)       (seq  (type-check t1 mem ok)
-                                      (type-check t2 mem ok))]
-          [(TAny)               (seq  (Jmp ok))]
-          [(TList t)      (let ([loop (gensym 'lst_loop)]
-                                [next-element (gensym 'lst_next)]
-                                [cont (gensym 'lst_cont)]
-                                [end (gensym 'lst_end)])
-                            (seq (Mov rax mem)
-                                 (Jmp loop)
-                                 (Label next-element)
-                                 (Pop rax)
-                                 (Mov rax (Offset rax 0))
-                                 (Label loop)
-                                 (assert-empty-ok rax ok)
-                                 (assert-cons-ok rax cont)
-                                 (Jmp end)
-                                 (Label cont)
-                                 (Xor rax type-cons)
-                                 (Push rax)
-                                 (Mov rax (Offset rax 8))
-                                 (type-check t rax next-element)
-                                 (Pop rax)
-                                 (Label end)))]
-          [(TVec t)        (let ([end (gensym 'vec_end)]
-                                 [cont (gensym 'vec_cont)]
-                                 [loop (gensym 'vec_loop)]
-                                 [next-element (gensym 'vec_next)])
-                             (seq (assert-vector-ok mem cont)
-                                  (Jmp end)
-                                  (Label cont)
-                                  (Mov rax mem)
-                                  (Xor rax type-vect)
-                                  (Cmp rax 0)
-                                  (Je ok)
-                                  (Mov r8 (Offset rax 0))
-                                  (Jmp loop)
-                                  (Label next-element)
-                                  (Pop rax)
-                                  (Pop r8)
-                                  (Label loop)
-                                  (Cmp r8 0)
-                                  (Je ok)
-                                  (Sub r8 1)
-                                  (Push r8)
-                                  (Add rax 8)
-                                  (Push rax)
-                                  (Mov rax (Offset rax 0))
-                                  (type-check t rax next-element)
-                                  (Pop rax)
-                                  (Pop r8)
-                                  (Label end)))])
-          ))
-
-;; String -> Asm
-(define (compile-string s)
-  (let ((len (string-length s)))
-    (if (zero? len)
-        (seq (Mov rax type-str))
-        (seq (Mov rax len)
-             (Mov (Offset rbx 0) rax)
-             (compile-string-chars (string->list s) 8)
-             (Mov rax rbx)
-             (Or rax type-str)
-             (Add rbx
-                  (+ 8 (* 4 (if (odd? len) (add1 len) len))))))))
-
-;; [Listof Char] Integer -> Asm
-(define (compile-string-chars cs i)
-  (match cs
-    ['() (seq)]
-    [(cons c cs)
-     (seq (Mov rax (char->integer c))
-          (Mov (Offset rbx i) 'eax)
-          (compile-string-chars cs (+ 4 i)))]))
 
 (define (compile-and es c t? ts typed?)
   (let ([and-short (gensym 'and_short)])

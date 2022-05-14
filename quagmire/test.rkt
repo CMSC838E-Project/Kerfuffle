@@ -1,3 +1,7 @@
 #lang typed/racket
 
-(ann-error (cons 3 (cons #f (cons 3 '()))) (Listof (Union 'Integer 'String)))
+(: f (-> Integer String (Listof (Union Integer String)) Integer))
+
+(define (f x y z) x)
+
+(f 3 "good" (cons 4 (cons "str" (cons #f '()))))

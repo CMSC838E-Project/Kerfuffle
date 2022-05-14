@@ -1,5 +1,5 @@
 #lang racket
-(provide parse parse-define parse-e parse-struct)
+(provide parse parse-define parse-e parse-struct type->runtime-struct)
 (require "ast.rkt")
 
 ;; -------------- Changes Start --------------
@@ -186,3 +186,17 @@
   (λ (x)
     (and (symbol? x)
          (memq x ops))))
+
+(define (type->runtime-struct t)
+  (parse-e (type->runtime-struct* t)))
+
+(define (type->runtime-struct* t)
+  (match t
+    [(TInt) ''Integer]
+    [(TChar) ''Character]
+    [(TStr) ''String]
+    [(TAny) ''Any]
+    [(TList t) `(Listof ,(type->runtime-struct* t))]
+    [(TVec t) `(Vectorof ,(type->runtime-struct* t))]
+    [(TUnion t1 t2) `(Union ,(type->runtime-struct* t1)
+                            ,(type->runtime-struct* t2))]))
