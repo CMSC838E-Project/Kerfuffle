@@ -5,6 +5,17 @@
 (struct Vectorof (t))
 (struct Union (t1 t2))
 (struct Struct (name))
+(struct Proc (ins out))
+
+(define (check-function-args t args)
+  (match t
+    [(Proc ins out) (check-function-args* ins args)]))
+
+(define (check-function-args* ts args)
+  (match args
+    ['() #t]
+    [(cons a args) (begin (ann-error a (car ts))
+                          (check-function-args* (cdr ts) args))]))
 
 (define (ann v t)
   (if (ann* v t)

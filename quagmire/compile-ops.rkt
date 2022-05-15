@@ -139,6 +139,10 @@
           (Xor rax type-str)
           char-array-copy
           (Or rax type-symb))]
+    ['proc-type
+     (seq (assert-proc rax)
+          (Xor rax type-proc)
+          (Mov rax (Offset rax 8)))]
 
     ;; Op2
     ['+

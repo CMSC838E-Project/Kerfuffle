@@ -28,7 +28,7 @@
     [(Begin e1 e2)      (compile-begin e1 e2 c t? ts typed?)]
     [(Let x e1 e2)      (compile-let x e1 e2 c t? ts typed?)]
     [(App e es)         (compile-app e es c t? ts typed?)]
-    [(Lam f xs e)       (compile-lam f xs e c ts typed? ts)]
+    [(Lam f xs e)       (compile-lam f xs e c ts)]
     [(Match e ps es)    (compile-match e ps es c t? ts typed?)]
     [(And-op es)           (compile-and es c t? ts typed?)]
     [(Or-op es)            (compile-or es c t? ts typed?)]))
@@ -110,12 +110,7 @@
 ;; arguments and return address is next frame
 (define (compile-app-nontail e es c ts typed?)
   (let ((r (gensym 'ret))
-        (i (* 8 (length es)))
-        (ts* (if (not typed?)
-                (match (lookup-type (match e [(Var f) f]) ts)
-                  [#f #f]
-                  [(TFunc ins out) ins])
-                #f)))
+        (i (* 8 (length es))))
     (seq (Lea rax r)
          (Push rax)
          (compile-es (cons e es)
@@ -129,11 +124,15 @@
          (Label r))))
 
 ;; Id [Listof Id] Expr CEnv -> Asm
-(define (compile-lam f xs e c)
-  (let ((fvs (fv (Lam f xs e))))
+(define (compile-lam f xs e c ts)
+  (let ((fvs (fv (Lam f xs e)))
+        (ts* (lookup-type f ts)))
     (seq (Lea rax (symbol->label f))
          (Mov (Offset rbx 0) rax)
-         (free-vars-to-heap fvs c 8)
+         (if ts*
+                (compile-e (type->runtime-struct ts*) c #f ts #t)
+                (Mov rax val-false))
+         (free-vars-to-heap fvs c 16)
          (Mov rax rbx) ; return value
          (Or rax type-proc)
          (Add rbx (* 8 (add1 (length fvs)))))))
@@ -170,7 +169,7 @@
               (seq  (Label (symbol->label f))
                     (Mov rax (Offset rsp (* 8 (length xs))))
                     (Xor rax type-proc)
-                    (copy-env-to-stack fvs 8)
+                    (copy-env-to-stack fvs 16)
                     (compile-e e env (not ts*) ts ts*)
 
                     

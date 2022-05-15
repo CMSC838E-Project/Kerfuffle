@@ -3,8 +3,13 @@
 (struct s1 (x))
 (struct s2 (y))
 
-(: func (-> s1 s1))
-(define (func a) a)
+(: f1 (-> Integer Integer))
+(: f2 (-> s1 s1))
 
-(func (s2 5))
+(define (f1 x) x)
+(define (f2 x) x)
+
+(define (func f) (f 3))
+
+(func f2)
 

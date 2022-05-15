@@ -8,15 +8,15 @@
   (match (parse-get-lam-types s)
     [(Prog ts ds e)
      (Prog ts (insert-check-def ds ts) (insert-check e ts #f))]
+    )
   )
-)
 
 (define (insert-check-def ds ts)
   (match ds
     ['() '()]
     [(cons (Defn f xs e) ds)
      (let ([ts* (lookup-type f ts)])
-      (cons (Defn f xs (insert-check e ts ts*)) (insert-check-def ds ts)))]))
+       (cons (Defn f xs (insert-check e ts ts*)) (insert-check-def ds ts)))]))
 
 (define (insert-check e ts typed?)
   (match e
@@ -27,29 +27,41 @@
     [(App e es)         (insert-check-app e es ts typed?)]
     [(Lam f xs e)       (Lam f xs (insert-check e ts typed?))]
     [(Match e ps es)    (Match (insert-check e ts typed?) ps
-                        (map (lambda (x) (insert-check x ts typed?)) es))]
+                               (map (lambda (x) (insert-check x ts typed?)) es))]
     [(And-op es)        (And-op (map (lambda (x) (insert-check x ts typed?)) es))]
     [(Or-op es)         (Or-op (map (lambda (x) (insert-check x ts typed?)) es))]
     [r                  r]
+    )
   )
-)
 
 (define (insert-check-app e es ts typed?)
-  (let ([ts* (if (not typed?)
-                  (match (lookup-type (match e [(Var f) f]) ts)
-                    [#f #f]
-                    [(TFunc ins out) ins])
-                  #f)]
-        [es (map (lambda (x) (insert-check x ts typed?)) es)])
-        (if ts*
-          (App e
-                (map (λ (e t)
-                        (App (Var 'ann-error)
-                            (list e
-                                  (type->runtime-struct t))))
-                      es
-                      ts*))
-          (App e es))))
+  (let ([es (map (lambda (x) (insert-check x ts typed?)) es)])
+    (if (not typed?)
+        (let ((vars (map (λ (e) (gensym 'checked-arg)) es))
+              (func (gensym 'saved-func))
+              (type (gensym 'function-type)))
+          (Let func e
+               (Let type (Prim 'proc-type (list (Var func)))
+                    (If (Var type)
+                        (save-args vars es
+                                   (Begin (App (Var 'check-function-args)
+                                               (list (Var type)
+                                                     (create-runtime-list
+                                                      (map (λ (x) (Var x)) vars))))
+                                          (App (Var func) (map (λ (x) (Var x)) vars))))
+                        (App (Var func) es)))))
+        (App e es))))
+
+(define (save-args ns es e)
+  (match* (ns es)
+    [('() '()) e]
+    [((cons n ns) (cons e* es))
+     (Let n e* (save-args ns es e))]))
+
+(define (create-runtime-list es)
+  (match es
+    ['() (Quote '())]
+    [(cons e es) (Prim 'cons (list e (create-runtime-list es)))]))
 
 (define (parse-get-lam-types s)
   (match (parse-base s)
@@ -111,7 +123,7 @@
     ['Boolean                 (TBool)]
     ['Any                     (TAny)]
     [(? symbol?)              (TStruct t)]
-    ((list '-> ins ... out)   (TFunc (map parse-type ins) out))
+    ((list '-> ins ... out)   (TFunc (map parse-type ins) (parse-type out)))
     [(list 'Listof t)         (TList (parse-type t))]
     [(list 'Vectorof t)       (TVec (parse-type t))]
     [(list 'Union t1 t2)      (TUnion (parse-type t1) (parse-type t2))]
@@ -250,7 +262,8 @@
          integer? boolean? integer->char char->integer
          box unbox empty? cons? box? car cdr
          vector? vector-length string? string-length
-         symbol? symbol->string string->symbol string->uninterned-symbol))
+         symbol? symbol->string string->symbol string->uninterned-symbol
+         proc-type))
 (define op2
   '(+ - < = cons eq? make-vector vector-ref struct?
       make-string string-append string-ref raise-type-error))
@@ -273,7 +286,14 @@
     [(TStr) ''String]
     [(TStruct name) `(Struct ',name)]
     [(TAny) ''Any]
+    [(TFunc ins out) `(Proc ,(build-type-list ins)
+                            ,(type->runtime-struct* out))]
     [(TList t) `(Listof ,(type->runtime-struct* t))]
     [(TVec t) `(Vectorof ,(type->runtime-struct* t))]
     [(TUnion t1 t2) `(Union ,(type->runtime-struct* t1)
                             ,(type->runtime-struct* t2))]))
+
+(define (build-type-list ts)
+  (match ts
+    ['() ''()]
+    [(cons t ts) `(cons ,(type->runtime-struct* t) ,(build-type-list ts))]))
