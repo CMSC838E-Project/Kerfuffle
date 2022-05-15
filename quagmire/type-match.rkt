@@ -14,15 +14,11 @@
 (define (check-function-args* ts args)
   (match args
     ['() #t]
-    [(cons a args) (begin (ann-error a (car ts))
+    [(cons a args) (begin (ann a (car ts))
                           (check-function-args* (cdr ts) args))]))
 
-(define (ann v t)
-  (if (ann* v t)
-      v
-      #f))
 
-(define (ann-error v t)
+(define (ann v t)
   (if (ann* v t)
       v
       (raise-type-error (type->string t) v)))
