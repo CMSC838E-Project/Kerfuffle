@@ -22,10 +22,10 @@ runtime.o: $(objs)
 	ld -r $(objs) -o runtime.o
 
 %.run: %.o runtime.o
-	gcc runtime.o $< -o $@
+	gcc -no-pie runtime.o $< -o $@
 
 .c.o:
-	gcc -fPIC -c -g -o $@ $<
+	gcc -no-pie -fPIC -c -g -o $@ $<
 
 .s.o:
 	nasm -g -f $(format) -o $@ $<
