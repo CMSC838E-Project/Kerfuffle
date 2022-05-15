@@ -91,7 +91,7 @@
     [(TChar)    "Char"]
     [(TStr)     "String"]
     [(TBool)    "Boolean"]
-    [(TStruct)  "Struct"]
+    [(TStruct t)  (symbol->string t)]
     [(TFunc ins out)  (string-append "(->" (apply string-append (map type->string ins)) (type->string out) ")")]
     [(TUnion t1 t2) (string-append 
                      "(Union " (type->string t1) " " (type->string t2) ")")]

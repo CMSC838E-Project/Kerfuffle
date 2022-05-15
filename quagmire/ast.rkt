@@ -15,7 +15,7 @@
 (struct TBool   ()             #:prefab)
 (struct TAny    ()             #:prefab)
 (struct TFunc   (ins out)      #:prefab)
-(struct TStruct ()             #:prefab)
+(struct TStruct (name)         #:prefab)
 (struct TList   (t)            #:prefab)
 (struct TVec    (t)            #:prefab)
 (struct TUnion  (t1 t2)        #:prefab)

@@ -4,6 +4,7 @@
 (struct Listof (t))
 (struct Vectorof (t))
 (struct Union (t1 t2))
+(struct Struct (name))
 
 (define (ann v t)
   (if (ann* v t)
@@ -21,6 +22,7 @@
     ['Boolean (boolean? v)]
     ['Character (char? v)]
     ['String (string? v)]
+    [(Struct name) (struct? name v)]
     ['Any #t]
     [(Listof t) (or (empty? v)
                     (and (cons? v)
@@ -43,6 +45,7 @@
     ['Character "Character"]
     ['String "String"]
     ['Any "Any"]
+    [(Struct name) (symbol->string name)]
     [(Listof t) (string-append "(Listof "
                                (string-append (type->string t)
                                               ")"))]

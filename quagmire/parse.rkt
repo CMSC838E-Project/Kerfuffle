@@ -109,8 +109,8 @@
     ['Char                    (TChar)]
     ['String                  (TStr)]
     ['Boolean                 (TBool)]
-    ['Struct                  (TStruct)]
     ['Any                     (TAny)]
+    [(? symbol?)              (TStruct t)]
     ((list '-> ins ... out)   (TFunc (map parse-type ins) out))
     [(list 'Listof t)         (TList (parse-type t))]
     [(list 'Vectorof t)       (TVec (parse-type t))]
@@ -252,7 +252,7 @@
          vector? vector-length string? string-length
          symbol? symbol->string string->symbol string->uninterned-symbol))
 (define op2
-  '(+ - < = cons eq? make-vector vector-ref 
+  '(+ - < = cons eq? make-vector vector-ref struct?
       make-string string-append string-ref raise-type-error))
 (define op3
   '(vector-set!))
@@ -271,6 +271,7 @@
     [(TBool) ''Boolean]
     [(TChar) ''Character]
     [(TStr) ''String]
+    [(TStruct name) `(Struct ',name)]
     [(TAny) ''Any]
     [(TList t) `(Listof ,(type->runtime-struct* t))]
     [(TVec t) `(Vectorof ,(type->runtime-struct* t))]

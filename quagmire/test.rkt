@@ -1,6 +1,10 @@
 #lang racket
 
-(: func (-> Integer Char Integer String Integer))
-(define (func a b c d) (+ a c))
-(define (func2 b) (+ (string-length b) (func 3 #\a 2 "hi")))
-(func2 "bac")
+(struct s1 (x))
+(struct s2 (y))
+
+(: func (-> s1 s1))
+(define (func a) a)
+
+(func (s2 5))
+
