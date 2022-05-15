@@ -186,7 +186,7 @@
   ;; good struct param example
   (check-equal? (run
     '(struct Apple (x))
-    '(: f (-> Struct Integer))
+    '(: f (-> Apple Integer))
     '(define (f x) (match x [(Apple x) x]))
     '(f (Apple 1)))
   1)
@@ -194,7 +194,7 @@
   ;; bad struct param example
   (check-equal? (run
     '(struct Apple (x))
-    '(: f (-> Struct Integer))
+    '(: f (-> Apple Integer))
     '(define (f x) (match x [(Apple x) x]))
     '(f 1))
   'err)
