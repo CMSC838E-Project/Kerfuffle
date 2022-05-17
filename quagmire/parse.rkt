@@ -82,14 +82,14 @@
               (type (gensym 'function-type)))
           (Let func e
                (Let type (Prim 'proc-type (list (Var func)))
-                    (If (Var type)
-                        (save-args vars es
-                                   (Begin (App (Var 'check-function-args)
-                                               (list (Var type)
-                                                     (create-runtime-list
-                                                      (map (λ (x) (Var x)) vars))))
-                                          (App (Var func) (map (λ (x) (Var x)) vars))))
-                        (App (Var func) es)))))
+                    (save-args vars es
+                          (If (Var type)
+                            (Begin (App (Var 'check-function-args)
+                                        (list (Var type)
+                                              (create-runtime-list
+                                                (map (λ (x) (Var x)) vars))))
+                                    (App (Var func) (map (λ (x) (Var x)) vars)))
+                            (App (Var func) (map (λ (x) (Var x)) vars)))))))
         (App e es))))
 
 (define (save-args ns es e)
@@ -125,7 +125,7 @@
     [(Let x e1 e2)      (append (get-lam-e e1) (get-lam-e e2))]
     [(App e es)         (append (get-lam-e e) (apply append (map get-lam-e es)))]
     [(LamT f ts xs e)   (cons (Type f (TFunc (map parse-type ts) (TAny))) (get-lam-e e))]
-    [(Lam f xs e)       (append (list (Type f (TFunc (list (TAny)) (TAny)))) (get-lam-e e))]
+    [(Lam f xs e)       (append (list (Type f (TFunc (map (lambda (x) (TAny)) xs) (TAny)))) (get-lam-e e))]
     [(Match e ps es)    (append (get-lam-e e) (apply append (map get-lam-e es)))]
     [(And-op es)        (apply append (map get-lam-e es))]
     [(Or-op es)         (apply append (map get-lam-e es))]

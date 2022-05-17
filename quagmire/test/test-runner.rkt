@@ -199,6 +199,19 @@
     '(f 1))
   'err)
 
+  ;; bad lambda param example
+  (check-equal? (run
+    '(define (func f) (f 3)) 
+    '(func (lambda ([x : String]) x)))
+  'err)
+
+  ;; good lambda param example
+  (check-equal? (run
+    '(define (func f) (f "abc")) 
+    '(func (lambda ([x : String]) x)))
+  "abc")
+
+
 ;   ;; Abscond examples
 ;   (check-equal? (run 7) 7)
 ;   (check-equal? (run -8) -8)
