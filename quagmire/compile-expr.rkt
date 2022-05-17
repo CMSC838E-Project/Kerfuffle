@@ -127,20 +127,13 @@
 (define (compile-lam f xs e c ts)
   (let ((fvs (fv (Lam f xs e)))
         (ts* (lookup-type f ts)))
-    (seq (Lea rax (symbol->label f))
+    (seq (Mov (Offset rbx 8) rax)
+         (Lea rax (symbol->label f))
          (Mov (Offset rbx 0) rax)
          (free-vars-to-heap fvs c 16)
          (Mov rax rbx) ; return value
          (Or rax type-proc)
-         (Push rax)
-         (Push rbx)
-         (Add rbx (* 8 (+ 2 (length fvs))))
-         (if ts*
-             (compile-e (type->runtime-struct ts*) (cons #f (cons #f c)) #f ts #t)
-                (Mov rax val-false))
-         (Pop r8)
-         (Mov (Offset r8 8) rax)
-         (Pop rax))))
+         (Add rbx (* 8 (+ 2 (length fvs)))))))
 
 ;; [Listof Id] CEnv Int -> Asm
 ;; Copy the values of given free variables into the heap at given offset

@@ -65,7 +65,7 @@
     [(Begin e1 e2)      (Begin (insert-check e1 ts typed?) (insert-check e2 ts typed?))]
     [(Let x e1 e2)      (Let x (insert-check e1 ts typed?) (insert-check e2 ts typed?))]
     [(App e es)         (insert-check-app e es ts typed?)]
-    [(Lam f xs e)       (Lam f xs (insert-check e ts typed?))]
+    [(Lam f xs e)       (wrap-lambda (Lam f xs (insert-check e ts typed?)) ts)]
     [(Match e ps es)    (Match (insert-check e ts typed?) ps
                                (map (lambda (x) (insert-check x ts typed?)) es))]
     [(And-op es)        (And-op (map (lambda (x) (insert-check x ts typed?)) es))]
@@ -73,6 +73,14 @@
     [r                  r]
     )
   )
+
+(define (wrap-lambda l ts) 
+  (Begin
+   (let ((ts (lookup-type (Lam-f l) ts)))
+     (if ts
+         (type->runtime-struct ts)
+         (Quote #f)))
+   l))
 
 (define (insert-check-app e es ts typed?)
   (let ([es (map (lambda (x) (insert-check x ts typed?)) es)])

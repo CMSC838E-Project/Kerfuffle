@@ -45,7 +45,7 @@
   (match (cons vs ts)
     [(cons '() '()) #t]
     [(cons (cons v vs) (cons t ts))
-     (and (type-matches v t)
+     (and (types-match v t)
           (procs-match vs ts))]
     [_ #f]))
 
