@@ -129,13 +129,16 @@
         (ts* (lookup-type f ts)))
     (seq (Lea rax (symbol->label f))
          (Mov (Offset rbx 0) rax)
-         (if ts*
-                (compile-e (type->runtime-struct ts*) c #f ts #t)
-                (Mov rax val-false))
          (free-vars-to-heap fvs c 16)
          (Mov rax rbx) ; return value
          (Or rax type-proc)
-         (Add rbx (* 8 (add1 (length fvs)))))))
+         (Push rbx)
+         (Add rbx (* 8 (+ 2 (length fvs))))
+         (if ts*
+                (compile-e (type->runtime-struct ts*) c #f ts #t)
+                (Mov rax val-false))
+         (Pop r8)
+         (Mov (Offset r8 8) rax))))
 
 ;; [Listof Id] CEnv Int -> Asm
 ;; Copy the values of given free variables into the heap at given offset
