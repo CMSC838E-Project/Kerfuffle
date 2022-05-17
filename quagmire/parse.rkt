@@ -11,6 +11,46 @@
     )
   )
 
+(define (remove-lamt-def ds)
+  (match ds
+    ['() '()]
+    [(cons (Defn f xs e) ds) (cons (Defn f xs (remove-lamt-e e)) (remove-lamt-def ds))]))
+
+(define (remove-lamt-e e)
+  (match e
+    [(Prim p es)        (Prim p (map remove-lamt-e es))]
+    [(If e1 e2 e3)      (If (remove-lamt-e e1) (remove-lamt-e e2) (remove-lamt-e e3))]
+    [(Begin e1 e2)      (Begin (remove-lamt-e e1) (remove-lamt-e e2))]
+    [(Let x e1 e2)      (Let x (remove-lamt-e e1) (remove-lamt-e e2))]
+    [(App e es)         (App (remove-lamt-e e) (map remove-lamt-e es))]
+    [(LamT f ts xs e)   (Lam f xs (remove-lamt-e e))]
+    [(Lam f xs e)       (Lam f xs (remove-lamt-e e))]
+    [(Match e ps es)    (Match (remove-lamt-e e) ps
+                               (map remove-lamt-e es))]
+    [(And-op es)        (And-op (map remove-lamt-e es))]
+    [(Or-op es)         (Or-op (map remove-lamt-e es))]
+    [r                  r]
+    )
+  )
+
+;; [Listof S-Expr] -> Prog
+(define (parse-base s)
+  (match s
+    [(cons (and (cons 'struct _) d) s)
+     (match (parse-base s)
+       [(Prog ts ds e)
+        (Prog ts (append (parse-struct d) ds) e)])]
+    [(cons (and (cons 'define _) d) s)
+     (match (parse-base s)
+       [(Prog ts ds e)
+        (Prog ts (cons (parse-define d) ds) e)])]
+    [(cons (cons ': t) s)
+        (match (parse-base s)
+          [(Prog ts ds e)
+          (Prog (cons (parse-type-def t) ts) ds e)])]
+    [(cons e '()) (Prog '() '() (parse-e e))]
+    [_ (error "program parse error")]))
+
 (define (insert-check-def ds ts)
   (match ds
     ['() '()]
@@ -66,7 +106,7 @@
 (define (parse-get-lam-types s)
   (match (parse-base s)
     [(Prog ts ds e)
-     (Prog (append (get-lam-def ds) (get-lam-e e) ts) ds e)]))
+     (Prog (append (get-lam-def ds) (get-lam-e e) ts) (remove-lamt-def ds) (remove-lamt-e e))]))
 
 (define (get-lam-def ds)
   (match ds
@@ -84,30 +124,13 @@
     [(Begin e1 e2)      (append (get-lam-e e1) (get-lam-e e2))]
     [(Let x e1 e2)      (append (get-lam-e e1) (get-lam-e e2))]
     [(App e es)         (append (get-lam-e e) (apply append (map get-lam-e es)))]
-    [(Lam f xs e)       (append (list (Type f (TFunc '((TAny)) (TAny)))) (get-lam-e e))]
+    [(LamT f ts xs e)   (cons (Type f (TFunc (map parse-type ts) (TAny))) (get-lam-e e))]
+    [(Lam f xs e)       (append (list (Type f (TFunc (list (TAny)) (TAny)))) (get-lam-e e))]
     [(Match e ps es)    (append (get-lam-e e) (apply append (map get-lam-e es)))]
     [(And-op es)        (apply append (map get-lam-e es))]
     [(Or-op es)         (apply append (map get-lam-e es))]
   )
 )
-
-;; [Listof S-Expr] -> Prog
-(define (parse-base s)
-  (match s
-    [(cons (and (cons 'struct _) d) s)
-     (match (parse-base s)
-       [(Prog ts ds e)
-        (Prog ts (append (parse-struct d) ds) e)])]
-    [(cons (and (cons 'define _) d) s)
-     (match (parse-base s)
-       [(Prog ts ds e)
-        (Prog ts (cons (parse-define d) ds) e)])]
-    [(cons (cons ': t) s)
-        (match (parse-base s)
-          [(Prog ts ds e)
-          (Prog (cons (parse-type-def t) ts) ds e)])]
-    [(cons e '()) (Prog '() '() (parse-e e))]
-    [_ (error "program parse error")]))
 
 ;; [Listof S-Expr -> Type]
 (define (parse-type-def s)
@@ -200,6 +223,13 @@
      (Let x (parse-e e1) (parse-e e2))]
     [(cons 'match (cons e ms))
      (parse-match (parse-e e) ms)]
+
+    [(list (or 'lambda 'λ) (list (list xs ': ts) ...) e)
+        (if (and (list? xs)
+                  (andmap symbol? xs))
+            (LamT (gensym 'lambda) ts xs (parse-e e))
+            (error "parse lambda error"))]
+
     [(list (or 'lambda 'λ) xs e)
      (if (and (list? xs)
               (andmap symbol? xs))

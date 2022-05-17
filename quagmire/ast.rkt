@@ -80,6 +80,7 @@
 (struct Var   (x)          #:prefab)
 (struct App   (e es)       #:prefab)
 (struct Lam   (f xs e)     #:prefab)
+(struct LamT  (f ts xs e)  #:prefab)
 (struct Quote (d)          #:prefab)
 (struct Match (e ps es)    #:prefab)
 (struct And-op(es)         #:prefab)
