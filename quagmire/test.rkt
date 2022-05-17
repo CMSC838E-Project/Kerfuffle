@@ -1,4 +1,4 @@
 #lang racket
 
-((lambda (x) x) 1)
-
+(define (adder) (λ (x) (+ x 1)))
+(adder)
