@@ -64,7 +64,8 @@
     [(If e1 e2 e3)      (If (insert-check e1 ts typed?) (insert-check e2 ts typed?) (insert-check e3 ts typed?))]
     [(Begin e1 e2)      (Begin (insert-check e1 ts typed?) (insert-check e2 ts typed?))]
     [(Let x e1 e2)      (Let x (insert-check e1 ts typed?) (insert-check e2 ts typed?))]
-    [(App e es)         (insert-check-app e es ts typed?)]
+    [(App e es)         (insert-check-app (insert-check e ts typed?) 
+                                          (map (λ (x) (insert-check x ts typed?)) es) ts typed?)]
     [(Lam f xs e)       (wrap-lambda (Lam f xs (insert-check e ts typed?)) ts)]
     [(Match e ps es)    (Match (insert-check e ts typed?) ps
                                (map (lambda (x) (insert-check x ts typed?)) es))]
@@ -133,7 +134,7 @@
     [(Let x e1 e2)      (append (get-lam-e e1) (get-lam-e e2))]
     [(App e es)         (append (get-lam-e e) (apply append (map get-lam-e es)))]
     [(LamT f ts xs e)   (cons (Type f (TFunc (map parse-type ts) (TAny))) (get-lam-e e))]
-    [(Lam f xs e)       (append (list (Type f (TFunc (map (lambda (x) (TAny)) xs) (TAny)))) (get-lam-e e))]
+    [(Lam f xs e)       (get-lam-e e)]
     [(Match e ps es)    (append (get-lam-e e) (apply append (map get-lam-e es)))]
     [(And-op es)        (apply append (map get-lam-e es))]
     [(Or-op es)         (apply append (map get-lam-e es))]
